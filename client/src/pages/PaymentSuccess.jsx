@@ -11,7 +11,6 @@ function PaymentSuccess() {
   const transactionId = location.state?.transactionId;
   const blockNumber = location.state?.blockNumber;
   const gasUsed = location.state?.gasUsed;
-  const success = location.state?.success;
 
   useEffect(() => {
     // Start animation after component mounts
@@ -25,23 +24,23 @@ function PaymentSuccess() {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         
         const transaction = {
-          id: transactionId || `tx_${paymentData.amount}_${paymentData.currency}_${Date.now()}`,
+          id: transactionId || `tx_${paymentData.amount}_${paymentData.mode}_${Date.now()}`,
           userId: userData.phone,
           type: 'sent',
           amount: paymentData.amount,
-          currency: paymentData.currency === 'upi' ? 'INR' : paymentData.currency.toUpperCase(),
+          currency: paymentData.mode === 'upi' ? 'INR' : paymentData.mode.toUpperCase(),
           from: userData.phone || 'You',
           to: paymentData.recipientAddress,
-          recipientName: paymentData.currency === 'upi' 
+          recipientName: paymentData.mode === 'upi' 
             ? paymentData.scannedData?.address 
             : paymentData.recipientAddress?.slice(0, 8) + '...',
           timestamp: new Date().toISOString(),
-          status: success !== false ? 'completed' : 'failed',
+          status: 'completed',
           txHash: transactionId,
-          network: paymentData.currency === 'pyusd' ? 'Ethereum Sepolia' : 
-                   paymentData.currency === 'flow' ? 'Flow Testnet' : 'UPI',
           blockNumber: blockNumber,
-          gasUsed: gasUsed
+          gasUsed: gasUsed,
+          network: paymentData.mode === 'pyusd' ? 'Ethereum Sepolia' : 
+                   paymentData.mode === 'flow' ? 'Flow Testnet' : 'UPI'
         };
 
         // Get existing transactions from localStorage
@@ -63,7 +62,7 @@ function PaymentSuccess() {
     };
 
     saveTransaction();
-  }, [paymentData, transactionId, blockNumber, gasUsed, success]);
+  }, [paymentData, transactionId, blockNumber, gasUsed]);
 
   const handleGoHome = () => {
     navigate('/services');
@@ -120,11 +119,11 @@ function PaymentSuccess() {
           <div className="w-full bg-white/10 rounded-2xl p-6 mb-6">
             <div className="text-center mb-4">
               <h2 className="text-white text-3xl font-bold">
-                {paymentData.currency === 'upi' ? '₹' : ''}{paymentData.amount} {paymentData.currency === 'upi' ? '' : paymentData.currency.toUpperCase()}
+                ₹{paymentData.amount}
               </h2>
               <p className="text-white/70 text-sm">
-                {paymentData.currency === 'upi' ? 'UPI Payment' : 
-                 paymentData.currency === 'pyusd' ? 'PYUSD Payment' : 'FLOW Payment'}
+                {paymentData.mode === 'upi' ? 'UPI Payment' : 
+                 paymentData.mode === 'pyusd' ? 'PYUSD Payment' : 'FLOW Payment'}
               </p>
             </div>
 
@@ -132,7 +131,7 @@ function PaymentSuccess() {
               <div className="flex justify-between items-center">
                 <span className="text-white/70 text-sm">To</span>
                 <span className="text-white text-sm font-medium">
-                  {paymentData.currency === 'upi' 
+                  {paymentData.mode === 'upi' 
                     ? paymentData.scannedData?.address?.split('@')[0]
                     : `${paymentData.recipientAddress?.slice(0, 8)}...${paymentData.recipientAddress?.slice(-6)}`
                   }
@@ -142,26 +141,35 @@ function PaymentSuccess() {
               <div className="flex justify-between items-center">
                 <span className="text-white/70 text-sm">Network</span>
                 <span className="text-white text-sm">
-                  {paymentData.currency === 'upi' ? 'UPI' :
-                   paymentData.currency === 'pyusd' ? 'Ethereum Sepolia' : 'Flow Testnet'}
+                  {paymentData.mode === 'upi' ? 'UPI' :
+                   paymentData.mode === 'pyusd' ? 'Ethereum Sepolia' : 'Flow Testnet'}
                 </span>
               </div>
               
-              {transactionId && transactionId.startsWith('0x') && (
+              <div className="flex justify-between items-center">
+                <span className="text-white/70 text-sm">Transaction Hash</span>
+                <span className="text-white text-xs font-mono">
+                  {transactionId ? `${transactionId.slice(0, 8)}...${transactionId.slice(-6)}` : 'Generated'}
+                </span>
+              </div>
+              
+              {blockNumber && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70 text-sm">Transaction Hash</span>
-                  <span className="text-white text-xs font-mono">
-                    {transactionId.slice(0, 10)}...{transactionId.slice(-8)}
+                  <span className="text-white/70 text-sm">Block Number</span>
+                  <span className="text-white text-sm">
+                    {blockNumber}
                   </span>
                 </div>
               )}
               
-              <div className="flex justify-between items-center">
-                <span className="text-white/70 text-sm">Transaction ID</span>
-                <span className="text-white text-xs font-mono">
-                  {transactionId?.slice(-8) || 'Generated'}
-                </span>
-              </div>
+              {gasUsed && (
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70 text-sm">Gas Used</span>
+                  <span className="text-white text-sm">
+                    {parseInt(gasUsed).toLocaleString()}
+                  </span>
+                </div>
+              )}
               
               <div className="flex justify-between items-center">
                 <span className="text-white/70 text-sm">Time</span>

@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { 
+  fetchKeystore, 
+  decryptWallet, 
+  sendPYUSDTokens, 
+  sendFlowTokens 
+} from '../utils/walletService.js';
 
 function PinEntry() {
   const [pin, setPin] = useState('');
@@ -39,72 +45,59 @@ function PinEntry() {
     setError('');
 
     try {
-      console.log('Processing payment with data:', paymentData);
-      
-      // Import wallet service functions
-      const { fetchKeystore, decryptWallet, sendPYUSDTokens, sendFlowTokens } = await import('../utils/walletService');
-      
-      // Get user's encrypted keystore
+      // Fetch encrypted keystore from server
       const keystoreData = await fetchKeystore();
-      if (!keystoreData || !keystoreData.encryptedKeystore) {
-        throw new Error('Wallet not found. Please create a wallet first.');
-      }
       
-      // Decrypt the wallet with user's PIN
+      // Decrypt wallet using the entered PIN
       const wallet = await decryptWallet(keystoreData.encryptedKeystore, pin);
-      console.log('Wallet decrypted successfully. Address:', wallet.address);
       
       let transaction;
-      const { amount, recipientAddress, currency } = paymentData;
       
-      // Send the appropriate token based on currency
-      if (currency === 'pyusd') {
-        console.log(`Sending ${amount} PYUSD to ${recipientAddress}`);
-        transaction = await sendPYUSDTokens(wallet, recipientAddress, amount);
-      } else if (currency === 'flow') {
-        console.log(`Sending ${amount} FLOW to ${recipientAddress}`);
-        transaction = await sendFlowTokens(wallet, recipientAddress, amount);
+      // Execute actual blockchain transaction based on payment mode
+      if (paymentData.mode === 'pyusd') {
+        // Send PYUSD tokens on Ethereum Sepolia
+        transaction = await sendPYUSDTokens(
+          wallet, 
+          paymentData.recipientAddress, 
+          paymentData.amount
+        );
+      } else if (paymentData.mode === 'flow') {
+        // Send FLOW tokens on Flow Testnet
+        transaction = await sendFlowTokens(
+          wallet, 
+          paymentData.recipientAddress, 
+          paymentData.amount
+        );
       } else {
-        throw new Error(`Unsupported currency: ${currency}`);
+        throw new Error('UPI payments not supported in this version');
       }
       
-      console.log('Transaction sent:', transaction);
-      
-      // Wait for transaction confirmation
-      console.log('Waiting for transaction confirmation...');
+      // Wait for transaction to be mined
       const receipt = await transaction.wait();
-      console.log('Transaction confirmed:', receipt);
       
       // Navigate to confirmation/success page with real transaction data
       navigate('/payment-success', {
         state: {
           paymentData: paymentData,
           transactionId: transaction.hash,
+          transactionReceipt: receipt,
           blockNumber: receipt.blockNumber,
-          gasUsed: receipt.gasUsed.toString(),
-          success: true
+          gasUsed: receipt.gasUsed.toString()
         }
       });
     } catch (error) {
-      console.error('Payment processing failed:', error);
-      let errorMessage = 'Payment failed. Please try again.';
+      console.error('Payment failed:', error);
       
-      // Provide more specific error messages
-      if (error.message.includes('insufficient funds')) {
-        errorMessage = 'Insufficient balance to complete this transaction.';
-      } else if (error.message.includes('Wallet not found')) {
-        errorMessage = 'Wallet not found. Please create a wallet first.';
-      } else if (error.message.includes('Invalid PIN')) {
-        errorMessage = 'Invalid PIN. Please try again.';
-      } else if (error.message.includes('User rejected')) {
-        errorMessage = 'Transaction was cancelled.';
-      } else if (error.message.includes('gas')) {
-        errorMessage = 'Transaction failed due to gas issues. Please try again.';
-      } else if (error.message) {
-        errorMessage = error.message;
+      // Handle specific error types
+      if (error.message.includes('Invalid PIN')) {
+        setError('Invalid PIN. Please try again.');
+      } else if (error.message.includes('insufficient funds')) {
+        setError('Insufficient balance for this transaction.');
+      } else if (error.message.includes('user rejected')) {
+        setError('Transaction was cancelled.');
+      } else {
+        setError('Payment failed. Please try again.');
       }
-      
-      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

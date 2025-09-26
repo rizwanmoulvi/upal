@@ -173,8 +173,7 @@ function Domestic() {
         paymentData: {
           amount: amount,
           recipientAddress: recipientAddress,
-          currency: selectedMode,
-          mode: selectedMode, // Keep for backward compatibility
+          mode: selectedMode,
           isQRPayment: true,
           scannedData: scannedData
         }
