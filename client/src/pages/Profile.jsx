@@ -3,13 +3,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, RefreshCw, CircleUserRound } from 'lucide-react';
 import axios from 'axios';
-import { getFlowBalance, getNetworkInfo } from '../utils/walletService';
+import { getFlowBalance, getPYUSDBalance, getNetworkInfo } from '../utils/walletService';
 
 function Profile() {
   const [userData, setUserData] = useState({});
   const [flowBalance, setFlowBalance] = useState('0');
+  const [pyusdBalance, setPyusdBalance] = useState('0');
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [isLoadingPyusdBalance, setIsLoadingPyusdBalance] = useState(false);
   const [error, setError] = useState('');
   const [showBackupModal, setShowBackupModal] = useState(false);
   const navigate = useNavigate();
@@ -67,6 +69,15 @@ function Profile() {
             console.error('Flow balance fetch error:', balanceErr);
             setFlowBalance('0.00');
           }
+
+          // Fetch PYUSD balance
+          try {
+            const pyusdBal = await getPYUSDBalance(res.data.walletAddress);
+            setPyusdBalance(pyusdBal);
+          } catch (balanceErr) {
+            console.error('PYUSD balance fetch error:', balanceErr);
+            setPyusdBalance('0.00');
+          }
         }
         
       } catch (err) {
@@ -107,6 +118,21 @@ function Profile() {
       setError('Failed to refresh Flow balance');
     } finally {
       setIsLoadingBalance(false);
+    }
+  };
+
+  const refreshPyusdBalance = async () => {
+    if (!userData.walletAddress) return;
+    
+    setIsLoadingPyusdBalance(true);
+    try {
+      const balance = await getPYUSDBalance(userData.walletAddress);
+      setPyusdBalance(balance);
+    } catch (err) {
+      console.error('PYUSD balance refresh error:', err);
+      setError('Failed to refresh PYUSD balance');
+    } finally {
+      setIsLoadingPyusdBalance(false);
     }
   };
 
@@ -234,10 +260,24 @@ function Profile() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-green-800">PYUSD Balance</p>
-                  <p className="text-lg font-bold text-green-900">
-                    ${userData.pyusdBalance || userData.balance || '0.00'}
-                  </p>
+                  <p className="text-xs text-green-600 mb-1">Ethereum Sepolia</p>
+                  <p className="text-lg font-bold text-green-900">{parseFloat(pyusdBalance).toFixed(2)} PYUSD</p>
                 </div>
+                <button
+                  onClick={refreshPyusdBalance}
+                  disabled={isLoadingPyusdBalance || !userData.walletAddress}
+                  className={`p-2 rounded-lg ${
+                    isLoadingPyusdBalance || !userData.walletAddress
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-green-200 hover:bg-green-300 text-green-800'
+                  } transition-colors`}
+                  title="Refresh PYUSD balance"
+                >
+                  <RefreshCw 
+                    size={16} 
+                    className={isLoadingPyusdBalance ? 'animate-spin' : ''} 
+                  />
+                </button>
               </div>
             </div>
 

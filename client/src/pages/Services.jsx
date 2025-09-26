@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
-import { QrCode, FileText, Users, ArrowLeftRight, Compass, CheckCircle, ChevronDown } from "lucide-react";
+import { QrCode, FileText, Users, ArrowLeftRight, Compass, CheckCircle, ChevronDown, RefreshCw } from "lucide-react";
+import { getFlowBalance, getPYUSDBalance, fetchKeystore, decryptWallet } from '../utils/walletService';
 
 
 function Domestic() {
@@ -12,8 +13,95 @@ function Domestic() {
     pyusd: '125.50',
     flow: '0.75'
   });
+  const [isRefreshing, setIsRefreshing] = useState({
+    pyusd: false,
+    flow: false
+  });
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Refresh PYUSD balance
+  const refreshPYUSDBalance = async () => {
+    try {
+      setIsRefreshing(prev => ({ ...prev, pyusd: true }));
+      
+      // Get user's wallet address
+      const keystoreData = await fetchKeystore();
+      if (!keystoreData || !keystoreData.walletAddress) {
+        throw new Error('Wallet not found');
+      }
+      
+      const balance = await getPYUSDBalance(keystoreData.walletAddress);
+      setWalletBalances(prev => ({ ...prev, pyusd: parseFloat(balance).toFixed(2) }));
+    } catch (error) {
+      console.error('Failed to refresh PYUSD balance:', error);
+      // Keep existing balance on error
+    } finally {
+      setIsRefreshing(prev => ({ ...prev, pyusd: false }));
+    }
+  };
+
+  // Refresh FLOW balance
+  const refreshFLOWBalance = async () => {
+    try {
+      setIsRefreshing(prev => ({ ...prev, flow: true }));
+      
+      // Get user's wallet address
+      const keystoreData = await fetchKeystore();
+      if (!keystoreData || !keystoreData.walletAddress) {
+        throw new Error('Wallet not found');
+      }
+      
+      const balance = await getFlowBalance(keystoreData.walletAddress);
+      setWalletBalances(prev => ({ ...prev, flow: parseFloat(balance).toFixed(4) }));
+    } catch (error) {
+      console.error('Failed to refresh FLOW balance:', error);
+      // Keep existing balance on error
+    } finally {
+      setIsRefreshing(prev => ({ ...prev, flow: false }));
+    }
+  };
+
+  // Fetch initial balances on component load
+  const fetchInitialBalances = async () => {
+    try {
+      // Get user's wallet address
+      const keystoreData = await fetchKeystore();
+      if (!keystoreData || !keystoreData.walletAddress) {
+        console.log('No wallet found, skipping balance fetch');
+        return;
+      }
+
+      // Fetch both balances in parallel
+      const [pyusdBalance, flowBalance] = await Promise.allSettled([
+        getPYUSDBalance(keystoreData.walletAddress),
+        getFlowBalance(keystoreData.walletAddress)
+      ]);
+
+      // Update PYUSD balance
+      if (pyusdBalance.status === 'fulfilled') {
+        setWalletBalances(prev => ({ 
+          ...prev, 
+          pyusd: parseFloat(pyusdBalance.value).toFixed(2) 
+        }));
+      } else {
+        console.error('Failed to fetch PYUSD balance:', pyusdBalance.reason);
+      }
+
+      // Update FLOW balance
+      if (flowBalance.status === 'fulfilled') {
+        setWalletBalances(prev => ({ 
+          ...prev, 
+          flow: parseFloat(flowBalance.value).toFixed(4) 
+        }));
+      } else {
+        console.error('Failed to fetch FLOW balance:', flowBalance.reason);
+      }
+
+    } catch (error) {
+      console.error('Failed to fetch initial balances:', error);
+    }
+  };
 
   useEffect(() => {
     // Check if user is authenticated
@@ -39,6 +127,10 @@ function Domestic() {
         navigate('/wallet-setup');
       } else {
         console.log('Home: User authenticated successfully');
+        // Fetch initial balances if user has wallet
+        if (parsedData.hasWallet) {
+          fetchInitialBalances();
+        }
       }
     } catch {
       console.log('Home: Error parsing userData, redirecting to auth');
@@ -139,7 +231,10 @@ function Domestic() {
                   }}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${selectedMode === 'pyusd' ? 'bg-fuchsia-50 text-fuchsia-600' : 'text-gray-700'}`}
                 >
-                  PYUSD
+                  <div>
+                    <div className="font-medium">PYUSD</div>
+                    <div className="text-xs text-gray-500">Ethereum Sepolia</div>
+                  </div>
                 </button>
                 <button
                   onClick={() => {
@@ -148,7 +243,10 @@ function Domestic() {
                   }}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 rounded-b-lg ${selectedMode === 'flow' ? 'bg-fuchsia-50 text-fuchsia-600' : 'text-gray-700'}`}
                 >
-                  FLOW
+                  <div>
+                    <div className="font-medium">FLOW</div>
+                    <div className="text-xs text-gray-500">Flow Testnet</div>
+                  </div>
                 </button>
               </div>
             )}
@@ -167,14 +265,35 @@ function Domestic() {
           <div className={`text-center transition-all duration-200 ${
             amount !== '0' ? 'scale-105' : ''
           }`}>
-            <div className="text-x font-bold text-white/80 mb-1 flex items-center justify-center gap-2">
-              <span>
-                {selectedMode === 'upi' ? '₹ (Rupee)' : selectedMode === 'pyusd' ? 'PYUSD' : 'FLOW'}
-              </span>
-              {(selectedMode === 'pyusd' || selectedMode === 'flow') && (
-                <span className="text-xs text-white/60">
-                  Bal: {walletBalances[selectedMode]}
+            <div className="text-center">
+              <div className="text-x font-bold text-white/80 mb-1 flex items-center justify-center gap-2">
+                <span>
+                  {selectedMode === 'upi' ? '₹ (Rupee)' : selectedMode === 'pyusd' ? 'PYUSD' : 'FLOW'}
                 </span>
+                {(selectedMode === 'pyusd' || selectedMode === 'flow') && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-white/60">
+                      Bal: {walletBalances[selectedMode]}
+                    </span>
+                    <button
+                      onClick={selectedMode === 'pyusd' ? refreshPYUSDBalance : refreshFLOWBalance}
+                      disabled={isRefreshing[selectedMode]}
+                      className="p-1 hover:bg-white/10 rounded transition-colors disabled:opacity-50"
+                      title={`Refresh ${selectedMode.toUpperCase()} balance`}
+                    >
+                      <RefreshCw 
+                        size={12} 
+                        className={`text-white/60 ${isRefreshing[selectedMode] ? 'animate-spin' : ''}`} 
+                      />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {selectedMode === 'pyusd' && (
+                <div className="text-xs text-white/50">on Ethereum Sepolia</div>
+              )}
+              {selectedMode === 'flow' && (
+                <div className="text-xs text-white/50">on Flow Testnet</div>
               )}
             </div>
             <h1 className="text-6xl font-bold text-white">

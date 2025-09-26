@@ -5,11 +5,11 @@ import { ethers } from 'ethers';
 import { 
   resolveENS, 
   sendFlowTokens, 
-  sendERC20Tokens, 
+  sendPYUSDTokens, 
   fetchKeystore, 
   decryptWallet 
 } from '../utils/walletService';
-import { TOKENS } from '../config/networks';
+import { TOKENS, CURRENCY_NETWORKS } from '../config/networks';
 import TransactionSuccess from '../components/TransactionSuccess';
 
 function Transfer() {
@@ -177,17 +177,9 @@ function Transfer() {
                 throw new Error(`Invalid recipient address format. Expected 42-character hexadecimal address starting with 0x, got: ${recipientAddress}`);
               }
               
-              // Use Flow testnet address when available, fallback to placeholder for now
-              const tokenAddress = TOKENS.PYUSD.flowTestnetAddress || TOKENS.PYUSD.address;
-              
-              tx = await sendERC20Tokens(
-                wallet, 
-                tokenAddress, 
-                recipientAddress, 
-                amount, 
-                TOKENS.PYUSD.decimals
-              );
-              console.log('PYUSD transaction sent:', tx);
+              // Send PYUSD tokens on Sepolia network
+              tx = await sendPYUSDTokens(wallet, recipientAddress, amount);
+              console.log('PYUSD transaction sent on Sepolia:', tx);
             }
             
             txHash = tx.hash;

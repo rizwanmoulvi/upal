@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ethers } from 'ethers';
-import { DEFAULT_NETWORK } from '../config/networks.js';
+import { DEFAULT_NETWORK, CURRENCY_NETWORKS, TOKENS } from '../config/networks.js';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -84,14 +84,38 @@ export const createWalletFromMnemonic = (mnemonic) => {
   }
 };
 
-// Get Flow provider instance
-export const getFlowProvider = () => {
+// Get provider instance for a specific network
+export const getProvider = (network) => {
   try {
-    const provider = new ethers.JsonRpcProvider(DEFAULT_NETWORK.rpcUrl);
+    const provider = new ethers.JsonRpcProvider(network.rpcUrl);
     return provider;
   } catch {
-    throw new Error('Failed to connect to Flow network');
+    throw new Error(`Failed to connect to ${network.name}`);
   }
+};
+
+// Get Flow provider instance (legacy - kept for backward compatibility)
+export const getFlowProvider = () => {
+  return getProvider(DEFAULT_NETWORK);
+};
+
+// Get token contract address for a specific network
+export const getTokenAddress = (tokenSymbol, network) => {
+  const token = TOKENS[tokenSymbol.toUpperCase()];
+  if (!token) {
+    throw new Error(`Token ${tokenSymbol} not supported`);
+  }
+
+  // Map network to contract address
+  if (network.chainId === 11155111) { // Ethereum Sepolia
+    return token.contracts.sepolia;
+  } else if (network.chainId === 1) { // Ethereum Mainnet
+    return token.contracts.mainnet;
+  } else if (network.chainId === 545) { // Flow Testnet
+    return token.contracts.flowTestnet;
+  }
+  
+  throw new Error(`Token ${tokenSymbol} not available on ${network.name}`);
 };
 
 // Get Flow token balance for an address
@@ -135,9 +159,10 @@ export const resolveENS = async (ensName) => {
 };
 
 // Send native FLOW tokens
-export const sendFlowTokens = async (wallet, toAddress, amount) => {
+// Send native tokens on any network
+export const sendNativeTokens = async (wallet, toAddress, amount, network) => {
   try {
-    const provider = getFlowProvider();
+    const provider = getProvider(network);
     const connectedWallet = wallet.connect(provider);
     
     const transaction = {
@@ -149,14 +174,34 @@ export const sendFlowTokens = async (wallet, toAddress, amount) => {
     const tx = await connectedWallet.sendTransaction(transaction);
     return tx;
   } catch (error) {
-    throw new Error(`Failed to send FLOW tokens: ${error.message}`);
+    throw new Error(`Failed to send ${network.nativeCurrency.symbol} tokens: ${error.message}`);
+  }
+};
+
+// Legacy function for Flow tokens (kept for backward compatibility)
+export const sendFlowTokens = async (wallet, toAddress, amount) => {
+  return sendNativeTokens(wallet, toAddress, amount, CURRENCY_NETWORKS.flow);
+};
+
+// Send PYUSD tokens on Sepolia network
+export const sendPYUSDTokens = async (wallet, toAddress, amount) => {
+  try {
+    const network = CURRENCY_NETWORKS.pyusd;
+    const tokenAddress = getTokenAddress('PYUSD', network);
+    const decimals = TOKENS.PYUSD.decimals;
+    
+    return await sendERC20Tokens(wallet, tokenAddress, toAddress, amount, decimals, network);
+  } catch (error) {
+    throw new Error(`Failed to send PYUSD tokens: ${error.message}`);
   }
 };
 
 // Send ERC-20 tokens (like PYUSD)
-export const sendERC20Tokens = async (wallet, tokenAddress, toAddress, amount, decimals = 18) => {
+export const sendERC20Tokens = async (wallet, tokenAddress, toAddress, amount, decimals = 18, network = null) => {
   try {
-    const provider = getFlowProvider();
+    // Use provided network or default to Flow testnet for backward compatibility
+    const targetNetwork = network || CURRENCY_NETWORKS.flow;
+    const provider = getProvider(targetNetwork);
     const connectedWallet = wallet.connect(provider);
     
     // ERC-20 contract ABI for transfer function
@@ -177,9 +222,11 @@ export const sendERC20Tokens = async (wallet, tokenAddress, toAddress, amount, d
 };
 
 // Get token balance (ERC-20)
-export const getTokenBalance = async (walletAddress, tokenAddress, decimals = 18) => {
+export const getTokenBalance = async (walletAddress, tokenAddress, decimals = 18, network = null) => {
   try {
-    const provider = getFlowProvider();
+    // Use provided network or default to Flow testnet for backward compatibility
+    const targetNetwork = network || CURRENCY_NETWORKS.flow;
+    const provider = getProvider(targetNetwork);
     
     const erc20ABI = [
       "function balanceOf(address owner) view returns (uint256)",
@@ -192,6 +239,19 @@ export const getTokenBalance = async (walletAddress, tokenAddress, decimals = 18
     return ethers.formatUnits(balance, decimals);
   } catch (error) {
     throw new Error(`Failed to get token balance: ${error.message}`);
+  }
+};
+
+// Get PYUSD balance on Sepolia network
+export const getPYUSDBalance = async (walletAddress) => {
+  try {
+    const network = CURRENCY_NETWORKS.pyusd;
+    const tokenAddress = getTokenAddress('PYUSD', network);
+    const decimals = TOKENS.PYUSD.decimals;
+    
+    return await getTokenBalance(walletAddress, tokenAddress, decimals, network);
+  } catch (error) {
+    throw new Error(`Failed to get PYUSD balance: ${error.message}`);
   }
 };
 
