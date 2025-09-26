@@ -419,7 +419,7 @@ function Domestic() {
 
         {/* Keypad */}
         <div className="px-6">
-          <div className="grid grid-cols-3 gap-6 text-white text-2xl font-medium">
+          <div className="grid grid-cols-3 gap-1 text-white text-2xl font-medium">
             {["1","2","3","4","5","6","7","8","9",".","0","<"].map((num, idx) => (
               <button
                 key={idx}

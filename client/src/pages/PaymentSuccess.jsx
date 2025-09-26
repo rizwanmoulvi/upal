@@ -119,7 +119,9 @@ function PaymentSuccess() {
           <div className="w-full bg-white/10 rounded-2xl p-6 mb-6">
             <div className="text-center mb-4">
               <h2 className="text-white text-3xl font-bold">
-                ₹{paymentData.amount}
+                {paymentData.mode === 'upi' ? '₹' : 
+             paymentData.mode === 'pyusd' ? ' ' : 
+             ' '}{paymentData.amount}
               </h2>
               <p className="text-white/70 text-sm">
                 {paymentData.mode === 'upi' ? 'UPI Payment' : 

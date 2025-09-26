@@ -142,42 +142,44 @@ function PinEntry() {
           <div className="w-9 h-9"></div>
         </div>
 
-        {/* Payment Summary */}
-        <div className="px-6 pb-6">
-          <div className="bg-white/10 rounded-lg p-4">
-            <div className="text-center">
-              <h2 className="text-white text-3xl font-bold mb-2">
-                ₹{paymentData.amount}
-              </h2>
-              <p className="text-white/70 text-sm">
-                {paymentData.mode === 'upi' ? 'UPI Payment' : 
-                 paymentData.mode === 'pyusd' ? 'PYUSD Payment' : 'FLOW Payment'}
-              </p>
-            </div>
-            
-            <div className="mt-4 pt-4 border-t border-white/20">
-              <div className="flex justify-between text-sm text-white/80 mb-2">
-                <span>To:</span>
-                <span className="font-medium">
-                  {paymentData.mode === 'upi' 
-                    ? paymentData.scannedData?.address
-                    : `${paymentData.recipientAddress?.slice(0, 8)}...${paymentData.recipientAddress?.slice(-6)}`
-                  }
-                </span>
+        
+          <div className="px-6 pb-6">
+            <div className="bg-white/10 rounded-lg p-4">
+              <div className="text-center">
+                <h2 className="text-white text-3xl font-bold mb-2">
+            {paymentData.mode === 'upi' ? '₹' : 
+             paymentData.mode === 'pyusd' ? ' ' : 
+             ' '}{paymentData.amount}
+                </h2>
+                <p className="text-white/70 text-sm">
+            {paymentData.mode === 'upi' ? 'UPI Payment' : 
+             paymentData.mode === 'pyusd' ? 'PYUSD Payment' : 'FLOW Payment'}
+                </p>
               </div>
-              {paymentData.mode !== 'upi' && (
-                <div className="flex justify-between text-sm text-white/80">
-                  <span>Network:</span>
-                  <span>{paymentData.mode === 'pyusd' ? 'Ethereum Sepolia' : 'Flow Testnet'}</span>
+              
+              <div className="mt-4 pt-4 border-t border-white/20">
+                <div className="flex justify-between text-sm text-white/80 mb-2">
+            <span>To:</span>
+            <span className="font-medium">
+              {paymentData.mode === 'upi' 
+                ? paymentData.scannedData?.address
+                : `${paymentData.recipientAddress?.slice(0, 8)}...${paymentData.recipientAddress?.slice(-6)}`
+              }
+            </span>
                 </div>
-              )}
+                {paymentData.mode !== 'upi' && (
+            <div className="flex justify-between text-sm text-white/80">
+              <span>Network:</span>
+              <span>{paymentData.mode === 'pyusd' ? 'Ethereum Sepolia' : 'Flow Testnet'}</span>
+            </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* PIN Input */}
-        <div className="flex-1 flex flex-col justify-center px-6">
-          <div className="text-center mb-8">
+          {/* PIN Input */}
+        <div className="flex-1 flex flex-col justify-center pl-6 pr-6 pb-6">
+          <div className="text-center mb-2">
             <h3 className="text-white text-xl font-semibold mb-2">Enter your PIN</h3>
             <p className="text-white/70 text-sm">Confirm this payment with your 6-digit PIN</p>
           </div>
@@ -198,12 +200,7 @@ function PinEntry() {
                 </div>
               ))}
             </div>
-            <button
-              onClick={() => setShowPin(!showPin)}
-              className="ml-4 p-1 text-white/70 hover:text-white transition-colors"
-            >
-              {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+
           </div>
 
           {/* Error Message */}
@@ -214,7 +211,7 @@ function PinEntry() {
           )}
 
           {/* Keypad */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-2">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map((num, index) => (
               <button
                 key={index}
@@ -241,7 +238,7 @@ function PinEntry() {
           <button
             onClick={handleSubmit}
             disabled={pin.length !== 6 || isLoading}
-            className={`w-full py-4 rounded-full font-semibold transition-colors ${
+            className={`w-full py-4 mt-4 rounded-full font-semibold transition-colors ${
               pin.length === 6 && !isLoading
                 ? 'bg-white text-fuchsia-600 hover:bg-gray-100'
                 : 'bg-white/30 text-white/50 cursor-not-allowed'
