@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
-import { QrCode, FileText, Users, ArrowLeftRight, Compass, CheckCircle, ChevronDown, RefreshCw } from "lucide-react";
+import { QrCode, FileText, Users, ArrowLeftRight, Compass, CheckCircle, ChevronDown, RefreshCw, Send } from "lucide-react";
 import { getFlowBalance, getPYUSDBalance, fetchKeystore, decryptWallet } from '../utils/walletService';
+import QRScanner from '../components/QRScanner';
+import { analyzeQRCode, testQRAnalysis } from '../utils/qrUtils';
 
 
 function Domestic() {
@@ -17,6 +19,10 @@ function Domestic() {
     pyusd: false,
     flow: false
   });
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [scannedData, setScannedData] = useState(null);
+  const [recipientAddress, setRecipientAddress] = useState('');
+  const [showNetworkSelection, setShowNetworkSelection] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -101,6 +107,79 @@ function Domestic() {
     } catch (error) {
       console.error('Failed to fetch initial balances:', error);
     }
+  };
+
+  // Handle QR code scanning
+  const handleQRScan = (qrData) => {
+    console.log('=== QR SCAN RECEIVED ===');
+    console.log('Raw QR Data:', qrData);
+    
+    const analysis = analyzeQRCode(qrData);
+    console.log('QR Code Analysis:', analysis);
+    
+    setScannedData(analysis);
+    
+    if (analysis.mode === 'upi') {
+      // Switch to UPI mode and set bank account display
+      setSelectedMode('upi');
+      setRecipientAddress(analysis.address);
+    } else if (analysis.mode === 'crypto') {
+      // For wallet addresses, show network selection
+      setRecipientAddress(analysis.address);
+      
+      if (analysis.network === 'ethereum') {
+        setSelectedMode('pyusd');
+        
+        // Show chain warning if not Sepolia
+        if (analysis.warning) {
+          alert(`⚠️ ${analysis.warning}\n\nThe payment will be processed on Ethereum Sepolia testnet regardless.`);
+        }
+      } else if (analysis.network === 'flow') {
+        setSelectedMode('flow');
+      } else if (analysis.network === 'bitcoin') {
+        alert('Bitcoin payments are not supported yet. Please use Ethereum or Flow addresses.');
+        setScannedData(null);
+        return;
+      } else {
+        // Unknown network, show selection modal
+        setShowNetworkSelection(true);
+      }
+    } else if (analysis.mode === 'wallet-connect') {
+      alert(analysis.message || 'This QR code is for wallet connection, not payments. Please scan a payment address QR code.');
+      setScannedData(null);
+      return;
+    } else if (analysis.mode === 'unknown') {
+      alert(analysis.message || 'QR code format not recognized. Please ensure it contains a valid UPI ID or wallet address.');
+      setScannedData(null);
+      return;
+    }
+  };
+
+  // Handle network selection for wallet addresses
+  const handleNetworkSelection = (network) => {
+    setSelectedMode(network);
+    setShowNetworkSelection(false);
+  };
+
+  // Handle send button click (for QR scanned payments)
+  const handleSendPayment = () => {
+    if (!scannedData || !recipientAddress) {
+      return;
+    }
+
+    // Navigate to pin entry with payment data
+    navigate('/pin-entry', {
+      state: {
+        paymentData: {
+          amount: amount,
+          recipientAddress: recipientAddress,
+          currency: selectedMode,
+          mode: selectedMode, // Keep for backward compatibility
+          isQRPayment: true,
+          scannedData: scannedData
+        }
+      }
+    });
   };
 
   useEffect(() => {
@@ -300,10 +379,42 @@ function Domestic() {
               {amount}
             </h1>
           </div>
-          {amount !== '0' && (
+          {amount !== '0' && !scannedData && (
             <p className="text-white/70 text-xs animate-pulse">
               Tap Transfer to continue
             </p>
+          )}
+          {scannedData && (
+            <div className="mt-2 p-3 bg-white/10 rounded-lg">
+              <p className="text-white/70 text-xs mb-1">Paying to:</p>
+              <p className="text-white text-sm font-medium">
+                {scannedData.mode === 'upi' ? (
+                  <span>
+                    {scannedData.address.split('@')[0]}
+                    <span className="text-white/70">@{scannedData.bank}</span>
+                  </span>
+                ) : (
+                  <span className="font-mono">
+                    {recipientAddress.length > 20 
+                      ? `${recipientAddress.slice(0, 8)}...${recipientAddress.slice(-8)}`
+                      : recipientAddress
+                    }
+                  </span>
+                )}
+              </p>
+              {scannedData.mode === 'crypto' && (
+                <div className="text-white/50 text-xs mt-1">
+                  <p>
+                    {selectedMode === 'pyusd' ? 'PYUSD on Ethereum Sepolia' : 'FLOW on Flow Network'}
+                  </p>
+                  {scannedData.chainName && (
+                    <p className="text-white/40">
+                      Detected: {scannedData.chainName}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -326,17 +437,33 @@ function Domestic() {
             <button className="flex-1 py-3 bg-fuchsia-500 text-white rounded-full font-semibold shadow hover:bg-fuchsia-400 transition-colors">
               Request
             </button>
-            <button 
-              onClick={handleTransfer}
-              className={`flex-1 py-3 text-white rounded-full font-semibold shadow transition-colors ${
-                amount && amount !== '0' 
-                  ? 'bg-fuchsia-500 hover:bg-fuchsia-400' 
-                  : 'bg-fuchsia-400/50 cursor-not-allowed'
-              }`}
-              disabled={!amount || amount === '0'}
-            >
-              Transfer
-            </button>
+            
+            {scannedData ? (
+              <button 
+                onClick={handleSendPayment}
+                className={`flex-1 py-3 text-white rounded-full font-semibold shadow transition-colors flex items-center justify-center space-x-2 ${
+                  amount && amount !== '0' 
+                    ? 'bg-green-500 hover:bg-green-400' 
+                    : 'bg-green-400/50 cursor-not-allowed'
+                }`}
+                disabled={!amount || amount === '0'}
+              >
+                <Send className="h-4 w-4" />
+                <span>Send</span>
+              </button>
+            ) : (
+              <button 
+                onClick={handleTransfer}
+                className={`flex-1 py-3 text-white rounded-full font-semibold shadow transition-colors ${
+                  amount && amount !== '0' 
+                    ? 'bg-fuchsia-500 hover:bg-fuchsia-400' 
+                    : 'bg-fuchsia-400/50 cursor-not-allowed'
+                }`}
+                disabled={!amount || amount === '0'}
+              >
+                Transfer
+              </button>
+            )}
           </div>
         </div>
 
@@ -354,9 +481,15 @@ function Domestic() {
             Explore
           </div>
           <div className="flex flex-col items-center text-white">
-            <div className="bg-white rounded-full p-4 shadow-lg -mt-8">
+            <button
+              onClick={() => {
+                console.log('QR button clicked, opening scanner...');
+                setShowQRScanner(true);
+              }}
+              className="bg-white rounded-full p-4 shadow-lg -mt-8 hover:bg-gray-50 transition-colors"
+            >
               <QrCode className="h-8 w-8 text-fuchsia-600" />
-            </div>
+            </button>
           </div>
           <div className="flex flex-col items-center text-white text-xs">
             <FileText className="h-6 w-6 mb-1" />
@@ -368,6 +501,45 @@ function Domestic() {
           </div>
         </div>
       </div>
+
+      {/* QR Scanner */}
+      <QRScanner
+        isOpen={showQRScanner}
+        onClose={() => setShowQRScanner(false)}
+        onScan={handleQRScan}
+      />
+
+      {/* Network Selection Modal */}
+      {showNetworkSelection && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 m-4 max-w-sm w-full">
+            <h3 className="text-lg font-semibold mb-4">Select Network</h3>
+            <p className="text-gray-600 mb-4">
+              Choose which network to use for this wallet address:
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => handleNetworkSelection('flow')}
+                className="w-full p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Flow Network
+              </button>
+              <button
+                onClick={() => handleNetworkSelection('pyusd')}
+                className="w-full p-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+              >
+                PYUSD (Ethereum)
+              </button>
+            </div>
+            <button
+              onClick={() => setShowNetworkSelection(false)}
+              className="w-full mt-3 p-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
