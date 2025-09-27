@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, Phone, Globe, Wallet, User } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Phone, Globe, Wallet, User, CreditCard } from 'lucide-react';
 import { ethers } from 'ethers';
 import { 
   resolveENS, 
@@ -30,52 +30,113 @@ function Transfer() {
   const [transferFrom, setTransferFrom] = useState(getDefaultTransferFrom());
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [transferTo, setTransferTo] = useState('');
-  const [selectedRecipientType, setSelectedRecipientType] = useState(''); // 'phone', 'ens', 'wallet'
+  const [selectedRecipientType, setSelectedRecipientType] = useState(''); // 'phone', 'ens', 'wallet', 'upi'
   const [selectedRecipient, setSelectedRecipient] = useState(null);
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [transactionData, setTransactionData] = useState(null);
+  
+  // Address book contacts loaded from localStorage
+  const [phoneNumbers, setPhoneNumbers] = useState([]);
+  const [walletAddresses, setWalletAddresses] = useState([]);
+  const [ensNames, setEnsNames] = useState([]);
+  const [upiIds, setUpiIds] = useState([]);
 
-  // Dummy data
-  const phoneNumbers = [
-    { id: 1, name: 'John Doe', phone: '+1 234-567-8901' },
-    { id: 2, name: 'Jane Smith', phone: '+1 234-567-8902' },
-    { id: 3, name: 'Bob Johnson', phone: '+1 234-567-8903' },
-    { id: 4, name: 'Alice Brown', phone: '+1 234-567-8904' },
-    { id: 5, name: 'Charlie Wilson', phone: '+1 234-567-8905' },
-    { id: 6, name: 'Diana Davis', phone: '+1 234-567-8906' },
-    { id: 7, name: 'Eve Miller', phone: '+1 234-567-8907' },
-    { id: 8, name: 'Frank Garcia', phone: '+1 234-567-8908' },
-    { id: 9, name: 'Grace Lee', phone: '+1 234-567-8909' },
-    { id: 10, name: 'Henry Wang', phone: '+1 234-567-8910' }
-  ];
-
-  const walletAddresses = [
-    { id: 1, name: 'Trading Wallet', address: '0x1234567890123456789012345678901234567890' },
-    { id: 2, name: 'Savings Wallet', address: '0x2345678901234567890123456789012345678901' },
-    { id: 3, name: 'DeFi Wallet', address: '0x3456789012345678901234567890123456789012' },
-    { id: 4, name: 'Gaming Wallet', address: '0x4567890123456789012345678901234567890123' },
-    { id: 5, name: 'NFT Wallet', address: '0x5678901234567890123456789012345678901234' },
-    { id: 6, name: 'Staking Wallet', address: '0x6789012345678901234567890123456789012345' },
-    { id: 7, name: 'Dev Wallet', address: '0x7890123456789012345678901234567890123456' },
-    { id: 8, name: 'Test Wallet', address: '0x8901234567890123456789012345678901234567' },
-    { id: 9, name: 'Main Wallet', address: '0x9012345678901234567890123456789012345678' },
-    { id: 10, name: 'Cold Wallet', address: '0x3CDCE2c7602f7ddf1680f5892f4a5f408F189f3C' }
-  ];
-
-  const ensNames = [
-    { id: 1, name: 'john.eth', address: '0x1234567890123456789012345678901234567890' },
-    { id: 2, name: 'jane.eth', address: '0x2345678901234567890123456789012345678901' },
-    { id: 3, name: 'bob.eth', address: '0x3456789012345678901234567890123456789012' },
-    { id: 4, name: 'alice.eth', address: '0x4567890123456789012345678901234567890123' },
-    { id: 5, name: 'charlie.eth', address: '0x5678901234567890123456789012345678901234' },
-    { id: 6, name: 'diana.eth', address: '0x6789012345678901234567890123456789012345' },
-    { id: 7, name: 'eve.eth', address: '0x7890123456789012345678901234567890123456' },
-    { id: 8, name: 'frank.eth', address: '0x8901234567890123456789012345678901234567' },
-    { id: 9, name: 'grace.eth', address: '0x9012345678901234567890123456789012345678' },
-    { id: 10, name: 'henry.eth', address: '0x0123456789012345678901234567890123456789' }
-  ];
+  // Load contacts from address book
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    const currentUserPhone = userData.phone;
+    
+    if (!currentUserPhone) {
+      // If no user logged in, use empty arrays
+      setPhoneNumbers([]);
+      setWalletAddresses([]);
+      setEnsNames([]);
+      setUpiIds([]);
+      return;
+    }
+    
+    const storageKey = `addressBook_${currentUserPhone}`;
+    const savedData = localStorage.getItem(storageKey);
+    
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        
+        // Check if it's in the correct categorized format
+        if (parsedData && typeof parsedData === 'object' && parsedData.upi !== undefined) {
+          // Convert address book format to transfer format
+          setUpiIds(parsedData.upi.map(contact => ({
+            id: contact.id,
+            name: contact.name,
+            upiId: contact.address,
+            note: contact.note
+          })));
+          
+          setPhoneNumbers(parsedData.phone.map(contact => ({
+            id: contact.id,
+            name: contact.name,
+            phone: contact.address,
+            note: contact.note
+          })));
+          
+          setEnsNames(parsedData.ens.map(contact => ({
+            id: contact.id,
+            name: contact.address, // For ENS, the address IS the ENS name
+            address: contact.address,
+            displayName: contact.name,
+            note: contact.note
+          })));
+          
+          setWalletAddresses(parsedData.wallet.map(contact => ({
+            id: contact.id,
+            name: contact.name,
+            address: contact.address,
+            note: contact.note
+          })));
+        } else if (Array.isArray(parsedData)) {
+          // Handle old flat array format
+          const upiContacts = parsedData.filter(c => c.category === 'upi');
+          const phoneContacts = parsedData.filter(c => c.category === 'phone');
+          const ensContacts = parsedData.filter(c => c.category === 'ens');
+          const walletContacts = parsedData.filter(c => c.category === 'wallet');
+          
+          setUpiIds(upiContacts.map(contact => ({
+            id: contact.id,
+            name: contact.name,
+            upiId: contact.address
+          })));
+          
+          setPhoneNumbers(phoneContacts.map(contact => ({
+            id: contact.id,
+            name: contact.name,
+            phone: contact.address
+          })));
+          
+          setEnsNames(ensContacts.map(contact => ({
+            id: contact.id,
+            name: contact.address,
+            address: contact.address,
+            displayName: contact.name
+          })));
+          
+          setWalletAddresses(walletContacts.map(contact => ({
+            id: contact.id,
+            name: contact.name,
+            address: contact.address
+          })));
+        }
+      } catch (error) {
+        console.error('Error loading address book:', error);
+        // Reset to empty arrays on error
+        setPhoneNumbers([]);
+        setWalletAddresses([]);
+        setEnsNames([]);
+        setUpiIds([]);
+      }
+    }
+  }, []);
 
   // Helper function to validate Ethereum address format
   const isValidAddress = (address) => {
@@ -86,13 +147,25 @@ function Transfer() {
            /^0x[a-fA-F0-9]{40}$/.test(address);
   };
 
-  const handleRecipientSelect = (recipient, type) => {
-    setSelectedRecipient(recipient);
-    setSelectedRecipientType(type);
-    setTransferTo(type === 'phone' ? recipient.phone : type === 'ens' ? recipient.name : recipient.address);
+  // Helper function to validate UPI ID format
+  const isValidUPI = (upiId) => {
+    return upiId && 
+           typeof upiId === 'string' && 
+           /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upiId);
   };
 
-  const handleConfirm = () => {
+  const handleRecipientSelect = (recipient, type) => {
+    setSelectedRecipient({ ...recipient, type });
+    if (type === 'phone') {
+      setTransferTo(recipient.phone);
+    } else if (type === 'ens') {
+      setTransferTo(recipient.name);
+    } else if (type === 'wallet') {
+      setTransferTo(recipient.address);
+    } else if (type === 'upi') {
+      setTransferTo(recipient.upiId);
+    }
+  };  const handleConfirm = () => {
     if (selectedRecipient || (transferTo && transferTo.trim())) {
       // If manually entered address, create a recipient object
       if (!selectedRecipient && transferTo) {
@@ -207,7 +280,7 @@ function Transfer() {
         amount,
         currency,
         from: transferFrom,
-        to: selectedRecipient?.phone || selectedRecipient?.name || selectedRecipient?.address,
+        to: selectedRecipient?.phone || selectedRecipient?.name || selectedRecipient?.address || selectedRecipient?.upiId,
         recipientName: selectedRecipient?.name,
         ...(txHash && { txHash })
       };
@@ -297,9 +370,9 @@ function Transfer() {
               setSelectedRecipient(null);
             }
           }}
-          placeholder="Enter wallet address, ENS, or phone number"
+          placeholder="Enter wallet address, ENS, phone number, or UPI ID"
           className={`w-full p-4 border rounded-lg bg-white/10 text-white placeholder-white/50 focus:ring-2 focus:ring-white/50 focus:border-transparent text-base ${
-            transferTo && (isValidAddress(transferTo) || transferTo.endsWith('.eth') || transferTo.includes('@') || transferTo.includes('+'))
+            transferTo && (isValidAddress(transferTo) || transferTo.endsWith('.eth') || transferTo.includes('+') || isValidUPI(transferTo))
               ? 'border-green-400' 
               : transferTo 
               ? 'border-red-400' 
@@ -310,50 +383,63 @@ function Transfer() {
           <p className={`text-xs mt-1 ${
             isValidAddress(transferTo) ? 'text-green-300' : 
             transferTo.endsWith('.eth') ? 'text-yellow-300' : 
-            transferTo.includes('@') || transferTo.includes('+') ? 'text-blue-300' :
+            isValidUPI(transferTo) ? 'text-green-300' :
+            transferTo.includes('+') ? 'text-blue-300' :
             'text-red-300'
           }`}>
             {isValidAddress(transferTo) ? '✓ Valid wallet address' : 
              transferTo.endsWith('.eth') ? '? ENS name (will be resolved)' :
-             transferTo.includes('@') || transferTo.includes('+') ? '? Phone/Email (for UPI only)' :
+             isValidUPI(transferTo) ? '✓ Valid UPI ID' :
+             transferTo.includes('+') ? '? Phone number (for international)' :
              '✗ Invalid format'}
           </p>
         )}
       </div>
 
       {/* Recipient Type Options */}
-      <div className="flex justify-center space-x-4">
+      <div className="flex justify-center space-x-3">
+        <button
+          onClick={() => setSelectedRecipientType('upi')}
+          className={`p-3 rounded-full border-2 transition-colors flex flex-col items-center justify-center ${
+            selectedRecipientType === 'upi'
+              ? 'border-white bg-white/10 text-white'
+              : 'border-white/30 text-white/70 hover:border-white/50'
+          }`}
+        >
+          <CreditCard className="w-5 h-5" />
+          <p className='text-xs'>UPI</p>
+        </button>
         <button
           onClick={() => setSelectedRecipientType('phone')}
-          className={`p-4 rounded-full border-2 transition-colors flex flex-col items-center justify-center ${
+          className={`p-3 rounded-full border-2 transition-colors flex flex-col items-center justify-center ${
             selectedRecipientType === 'phone'
               ? 'border-white bg-white/10 text-white'
               : 'border-white/30 text-white/70 hover:border-white/50'
           }`}
         >
-          <Phone className="w-6 h-6" />
+          <Phone className="w-5 h-5" />
           <p className='text-xs'>Phone</p>
         </button>
         <button
           onClick={() => setSelectedRecipientType('ens')}
-          className={`p-4 rounded-full border-2 flex flex-col items-center justify-center transition-colors ${
+          className={`p-3 rounded-full border-2 flex flex-col items-center justify-center transition-colors ${
             selectedRecipientType === 'ens'
               ? 'border-white bg-white/10 text-white'
               : 'border-white/30 text-white/70 hover:border-white/50'
           }`}
         >
-          <Globe className="w-6 h-6" />
+          <Globe className="w-5 h-5" />
           <p className='text-xs'>ENS</p>
         </button>
         <button
           onClick={() => setSelectedRecipientType('wallet')}
-          className={`p-4 rounded-full border-2 transition-colors flex flex-col items-center justify-center ${
+          className={`p-3 rounded-full border-2 transition-colors flex flex-col items-center justify-center ${
             selectedRecipientType === 'wallet'
               ? 'border-white bg-white/10 text-white'
               : 'border-white/30 text-white/70 hover:border-white/50'
           }`}
         >
-          <Wallet className="w-6 h-6" />
+          <Wallet className="w-5 h-5" />
           <p className='text-xs'>Wallet</p>
         </button>
       </div>
@@ -365,65 +451,125 @@ function Transfer() {
             Select Recipient
           </h3>
           <div className="flex-1 overflow-y-auto space-y-2 pb-4">
-            {selectedRecipientType === 'phone' && phoneNumbers.map((contact) => (
-              <button
-                key={contact.id}
-                onClick={() => handleRecipientSelect(contact, 'phone')}
-                className={`w-full p-3 rounded-lg text-left transition-colors ${
-                  selectedRecipient?.id === contact.id
-                    ? 'bg-white/20 border-2 border-white'
-                    : 'bg-white/10 border border-white/20 hover:bg-white/15'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-white/70 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-white font-medium">{contact.name}</p>
-                    <p className="text-white/60 text-sm">{contact.phone}</p>
-                  </div>
+            {selectedRecipientType === 'upi' && (
+              upiIds.length === 0 ? (
+                <div className="text-center py-8">
+                  <CreditCard className="w-12 h-12 text-white/40 mx-auto mb-3" />
+                  <p className="text-white/60 text-sm">No UPI contacts in address book</p>
+                  <p className="text-white/40 text-xs mt-1">Add UPI IDs from Activity page or enter manually above</p>
                 </div>
-              </button>
-            ))}
+              ) : (
+                upiIds.map((contact) => (
+                  <button
+                    key={contact.id}
+                    onClick={() => handleRecipientSelect(contact, 'upi')}
+                    className={`w-full p-3 rounded-lg text-left transition-colors ${
+                      selectedRecipient?.id === contact.id
+                        ? 'bg-white/20 border-2 border-white'
+                        : 'bg-white/10 border border-white/20 hover:bg-white/15'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <CreditCard className="w-5 h-5 text-white/70 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-white font-medium">{contact.name}</p>
+                        <p className="text-white/60 text-sm">{contact.upiId}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )
+            )}
             
-            {selectedRecipientType === 'ens' && ensNames.map((ens) => (
-              <button
-                key={ens.id}
-                onClick={() => handleRecipientSelect(ens, 'ens')}
-                className={`w-full p-3 rounded-lg text-left transition-colors ${
-                  selectedRecipient?.id === ens.id
-                    ? 'bg-white/20 border-2 border-white'
-                    : 'bg-white/10 border border-white/20 hover:bg-white/15'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <Globe className="w-5 h-5 text-white/70 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-white font-medium">{ens.name}</p>
-                    <p className="text-white/60 text-xs break-all">{ens.address}</p>
-                  </div>
+            {selectedRecipientType === 'phone' && (
+              phoneNumbers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Phone className="w-12 h-12 text-white/40 mx-auto mb-3" />
+                  <p className="text-white/60 text-sm">No phone contacts in address book</p>
+                  <p className="text-white/40 text-xs mt-1">Add phone numbers from Activity page or enter manually above</p>
                 </div>
-              </button>
-            ))}
+              ) : (
+                phoneNumbers.map((contact) => (
+                  <button
+                    key={contact.id}
+                    onClick={() => handleRecipientSelect(contact, 'phone')}
+                    className={`w-full p-3 rounded-lg text-left transition-colors ${
+                      selectedRecipient?.id === contact.id
+                        ? 'bg-white/20 border-2 border-white'
+                        : 'bg-white/10 border border-white/20 hover:bg-white/15'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <User className="w-5 h-5 text-white/70 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-white font-medium">{contact.name}</p>
+                        <p className="text-white/60 text-sm">{contact.phone}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )
+            )}
             
-            {selectedRecipientType === 'wallet' && walletAddresses.map((wallet) => (
-              <button
-                key={wallet.id}
-                onClick={() => handleRecipientSelect(wallet, 'wallet')}
-                className={`w-full p-3 rounded-lg text-left transition-colors ${
-                  selectedRecipient?.id === wallet.id
-                    ? 'bg-white/20 border-2 border-white'
-                    : 'bg-white/10 border border-white/20 hover:bg-white/15'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <Wallet className="w-5 h-5 text-white/70 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-white font-medium">{wallet.name}</p>
-                    <p className="text-white/60 text-xs break-all">{wallet.address}</p>
-                  </div>
+            {selectedRecipientType === 'ens' && (
+              ensNames.length === 0 ? (
+                <div className="text-center py-8">
+                  <Globe className="w-12 h-12 text-white/40 mx-auto mb-3" />
+                  <p className="text-white/60 text-sm">No ENS contacts in address book</p>
+                  <p className="text-white/40 text-xs mt-1">Add ENS names from Activity page or enter manually above</p>
                 </div>
-              </button>
-            ))}
+              ) : (
+                ensNames.map((ens) => (
+                  <button
+                    key={ens.id}
+                    onClick={() => handleRecipientSelect(ens, 'ens')}
+                    className={`w-full p-3 rounded-lg text-left transition-colors ${
+                      selectedRecipient?.id === ens.id
+                        ? 'bg-white/20 border-2 border-white'
+                        : 'bg-white/10 border border-white/20 hover:bg-white/15'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Globe className="w-5 h-5 text-white/70 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-white font-medium">{ens.displayName || ens.name}</p>
+                        <p className="text-white/60 text-xs break-all">{ens.name}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )
+            )}
+            
+            {selectedRecipientType === 'wallet' && (
+              walletAddresses.length === 0 ? (
+                <div className="text-center py-8">
+                  <Wallet className="w-12 h-12 text-white/40 mx-auto mb-3" />
+                  <p className="text-white/60 text-sm">No wallet contacts in address book</p>
+                  <p className="text-white/40 text-xs mt-1">Add wallet addresses from Activity page or enter manually above</p>
+                </div>
+              ) : (
+                walletAddresses.map((wallet) => (
+                  <button
+                    key={wallet.id}
+                    onClick={() => handleRecipientSelect(wallet, 'wallet')}
+                    className={`w-full p-3 rounded-lg text-left transition-colors ${
+                      selectedRecipient?.id === wallet.id
+                        ? 'bg-white/20 border-2 border-white'
+                        : 'bg-white/10 border border-white/20 hover:bg-white/15'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Wallet className="w-5 h-5 text-white/70 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-white font-medium">{wallet.name}</p>
+                        <p className="text-white/60 text-xs break-all">{wallet.address}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )
+            )}
           </div>
         </div>
       )}
