@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true }, // Hashed
   walletAddress: { type: String },
   ensDomain: { type: String },
+  ensName: { type: String }, // ENS subdomain like "1234567890.upal.eth"
   pyusdBalance: { type: Number, default: 0 },
   encryptedKeystore: { type: String }, // Encrypted wallet keystore JSON
   hasWallet: { type: Boolean, default: false },
@@ -227,6 +228,7 @@ app.get('/api/profile/:phone', async (req, res) => {
       name: user.name,
       walletAddress: user.walletAddress,
       ensDomain: user.ensDomain,
+      ensName: user.ensName,
       pyusdBalance: user.pyusdBalance,
       activity: user.activity
     });
@@ -293,11 +295,25 @@ app.post('/api/keystore', authenticateToken, async (req, res) => {
     user.encryptedKeystore = encryptedKeystore;
     user.walletAddress = walletAddress;
     user.hasWallet = true;
+    
+    // Try to create ENS subname (non-blocking)
+    let ensName = null;
+    try {
+      const { createUserSubname } = require('./utils/ensService');
+      ensName = await createUserSubname(user.phone, walletAddress, user.name);
+      user.ensName = ensName; // Store ENS name in user record
+      console.log(`ENS subname created: ${ensName} for user ${user.phone}`);
+    } catch (ensError) {
+      console.warn('ENS subname creation failed (non-critical):', ensError.message);
+      // Continue without ENS - don't fail the wallet creation
+    }
+    
     await user.save();
     
     res.json({ 
       message: 'Keystore stored successfully',
-      walletAddress: user.walletAddress 
+      walletAddress: user.walletAddress,
+      ensName: ensName || null
     });
   } catch (err) {
     console.error('Store keystore error:', err);
@@ -327,6 +343,10 @@ app.get('/api/keystore', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ENS Routes
+const ensRoutes = require('./routes/ens');
+app.use('/api/ens', ensRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
