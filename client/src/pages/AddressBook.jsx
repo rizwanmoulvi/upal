@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Phone, Globe, Wallet, CreditCard, Edit, Trash2, User } from 'lucide-react';
+import { ArrowLeft, Plus, Phone, Globe, Wallet, CreditCard, Edit, Trash2, User, Search } from 'lucide-react';
 
 function AddressBook() {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('upi');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [contacts, setContacts] = useState({
     upi: [],
     phone: [],
@@ -198,6 +199,24 @@ function AddressBook() {
     { id: 'wallet', label: 'Wallet', icon: Wallet }
   ];
 
+  // Filter contacts based on search query
+  const getFilteredContacts = () => {
+    const currentContacts = contacts[selectedTab] || [];
+    
+    if (!searchQuery.trim()) {
+      return currentContacts;
+    }
+    
+    return currentContacts.filter(contact => {
+      const name = contact.name?.toLowerCase() || '';
+      const address = contact.address?.toLowerCase() || '';
+      const note = contact.note?.toLowerCase() || '';
+      const query = searchQuery.toLowerCase();
+      
+      return name.includes(query) || address.includes(query) || note.includes(query);
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-[360px] h-[700px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
@@ -223,7 +242,10 @@ function AddressBook() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setSelectedTab(tab.id)}
+              onClick={() => {
+                setSelectedTab(tab.id);
+                setSearchQuery(''); // Clear search when switching tabs
+              }}
               className={`flex-1 px-3 py-3 text-xs font-medium transition-colors ${
                 selectedTab === tab.id
                   ? 'text-fuchsia-600 border-b-2 border-fuchsia-600 bg-white'
@@ -238,22 +260,45 @@ function AddressBook() {
           ))}
         </div>
 
+        {/* Search Bar */}
+        <div className="p-4 bg-white border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search ${tabs.find(t => t.id === selectedTab)?.label} contacts...`}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-fuchsia-500"
+            />
+          </div>
+        </div>
+
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          {contacts[selectedTab].length === 0 ? (
+          {getFilteredContacts().length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
               {getTabIcon(selectedTab)}
-              <p className="mt-2 text-sm">No {tabs.find(t => t.id === selectedTab)?.label} contacts yet</p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="mt-4 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm hover:bg-fuchsia-700 transition-colors"
-              >
-                Add First Contact
-              </button>
+              <p className="mt-2 text-sm">
+                {searchQuery.trim() 
+                  ? `No matching ${tabs.find(t => t.id === selectedTab)?.label} contacts found`
+                  : `No ${tabs.find(t => t.id === selectedTab)?.label} contacts yet`
+                }
+              </p>
+              {searchQuery.trim() ? (
+                <p className="mt-1 text-xs text-gray-400">Try a different search term</p>
+              ) : (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="mt-4 px-4 py-2 bg-fuchsia-600 text-white rounded-lg text-sm hover:bg-fuchsia-700 transition-colors"
+                >
+                  Add First Contact
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
-              {contacts[selectedTab].map((contact) => (
+              {getFilteredContacts().map((contact) => (
                 <div
                   key={contact.id}
                   className="p-4 bg-gray-50 rounded-lg border border-gray-200"

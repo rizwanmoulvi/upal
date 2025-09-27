@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
-import { QrCode, FileText, Users, ArrowLeftRight, Compass, CheckCircle, ChevronDown, RefreshCw, Send, X } from "lucide-react";
+import { QrCode, FileText, Users, ArrowLeftRight, Compass, CheckCircle, ChevronDown, RefreshCw, Send, X, Search } from "lucide-react";
 import { getFlowBalance, getPYUSDBalance, fetchKeystore, decryptWallet } from '../utils/walletService';
 import QRScanner from '../components/QRScanner';
 import { analyzeQRCode, testQRAnalysis } from '../utils/qrUtils';
@@ -30,6 +30,15 @@ function Domestic() {
   const [myQRType, setMyQRType] = useState('upi'); // 'upi' or 'wallet'
   const [myQRCodeData, setMyQRCodeData] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [availableContacts, setAvailableContacts] = useState({
+    phone: [],
+    ens: [],
+    wallet: [],
+    upi: []
+  });
+  const [user, setUser] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -243,6 +252,135 @@ function Domestic() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showDropdown]);
+
+  // Load user data and contacts
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    setUser(userData);
+    
+    if (userData.phone) {
+      loadContactsFromAddressBook(userData);
+    }
+  }, []);
+
+  const loadContactsFromAddressBook = (userData) => {
+    if (!userData.phone) return;
+    
+    try {
+      const addressBook = JSON.parse(localStorage.getItem(`addressBook_${userData.phone}`) || '{}');
+      console.log('Loading contacts for user:', userData.phone);
+      console.log('Address book data:', addressBook);
+      setAvailableContacts({
+        phone: addressBook.phone || [],
+        ens: addressBook.ens || [],
+        wallet: addressBook.wallet || [],
+        upi: addressBook.upi || []
+      });
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+    }
+  };
+
+  const handleRequestClick = () => {
+    if (!amount || amount === '0') {
+      alert('Please enter an amount first');
+      return;
+    }
+    setSearchQuery(''); // Clear search when opening modal
+    setShowRequestModal(true);
+  };
+
+  const handleSendRequest = (contact, contactType) => {
+    const newRequest = {
+      id: Date.now().toString(),
+      type: 'sent',
+      description: `Payment request for ${amount} ${selectedMode === 'upi' ? 'INR' : selectedMode.toUpperCase()}`,
+      amount: parseFloat(amount),
+      currency: selectedMode === 'upi' ? 'INR' : selectedMode.toUpperCase(),
+      from: user.ensName || user.phone || user.walletAddress,
+      fromType: user.ensName ? 'ens' : user.phone ? 'phone' : 'wallet',
+      to: getContactIdentifier(contact, contactType),
+      toType: contactType,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      requestNumber: `REQ${Date.now().toString().slice(-8)}`
+    };
+
+    // Save to current user's requests
+    const userId = user.phone || user.walletAddress;
+    const currentRequests = JSON.parse(localStorage.getItem(`requests_${userId}`) || '[]');
+    const updatedRequests = [newRequest, ...currentRequests];
+    localStorage.setItem(`requests_${userId}`, JSON.stringify(updatedRequests));
+
+    // Try to find recipient and add to their requests
+    const recipientIdentifier = getContactIdentifier(contact, contactType);
+    const allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+    const recipientUser = allUsers.find(u => 
+      u.phone === recipientIdentifier || 
+      u.walletAddress === recipientIdentifier || 
+      u.ensName === recipientIdentifier
+    );
+
+    if (recipientUser) {
+      const recipientId = recipientUser.phone || recipientUser.walletAddress;
+      const recipientRequests = JSON.parse(localStorage.getItem(`requests_${recipientId}`) || '[]');
+      const recipientRequest = {
+        ...newRequest,
+        type: 'received'
+      };
+      recipientRequests.unshift(recipientRequest);
+      localStorage.setItem(`requests_${recipientId}`, JSON.stringify(recipientRequests));
+    }
+
+    setShowRequestModal(false);
+    setAmount('0');
+    alert('Payment request sent successfully!');
+  };
+
+  const getContactIdentifier = (contact, type) => {
+    switch (type) {
+      case 'phone': return contact.address; // In AddressBook, phone numbers are stored in 'address' field
+      case 'ens': return contact.address;   // ENS names are stored in 'address' field
+      case 'wallet': return contact.address; // Wallet addresses are stored in 'address' field
+      case 'upi': return contact.address;   // UPI IDs are stored in 'address' field
+      default: return contact.address;      // All contact types use 'address' field in AddressBook
+    }
+  };
+
+  const getRelevantContacts = () => {
+    console.log('Getting relevant contacts for mode:', selectedMode);
+    console.log('Available contacts:', availableContacts);
+    
+    let relevantContacts = [];
+    
+    if (selectedMode === 'upi') {
+      // For INR/UPI mode, show phone and UPI contacts
+      relevantContacts = [
+        ...availableContacts.phone.map(c => ({ ...c, type: 'phone' })),
+        ...availableContacts.upi.map(c => ({ ...c, type: 'upi' }))
+      ];
+    } else {
+      // For PYUSD/Flow mode, show ENS and wallet contacts
+      relevantContacts = [
+        ...availableContacts.ens.map(c => ({ ...c, type: 'ens' })),
+        ...availableContacts.wallet.map(c => ({ ...c, type: 'wallet' }))
+      ];
+    }
+    
+    // Filter contacts based on search query
+    if (searchQuery.trim()) {
+      relevantContacts = relevantContacts.filter(contact => {
+        const name = contact.name?.toLowerCase() || '';
+        const address = contact.address?.toLowerCase() || '';
+        const query = searchQuery.toLowerCase();
+        
+        return name.includes(query) || address.includes(query);
+      });
+    }
+    
+    console.log('Filtered relevant contacts:', relevantContacts);
+    return relevantContacts;
+  };
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -521,7 +659,10 @@ function Domestic() {
 
           {/* Buttons */}
           <div className="flex justify-between mt-6 mb-4 space-x-4">
-            <button className="flex-1 py-3 bg-fuchsia-600 text-white rounded-full font-semibold shadow hover:bg-fuchsia-400 transition-colors">
+            <button 
+              onClick={handleRequestClick}
+              className="flex-1 py-3 bg-fuchsia-600 text-white rounded-full font-semibold shadow hover:bg-fuchsia-400 transition-colors"
+            >
               Request
             </button>
             
@@ -578,9 +719,12 @@ function Domestic() {
               <QrCode className="h-8 w-8 text-fuchsia-600" />
             </button>
           </div>
-          <div className="flex flex-col items-center text-white text-xs">
+          <div
+            onClick={() => navigate('/request')}
+            className="flex flex-col items-center text-white text-xs hover:text-white/80 transition-colors cursor-pointer"
+          >
             <FileText className="h-6 w-6 mb-1" />
-            Bills
+            Requests
           </div>
           <div
             onClick={() => navigate('/address-book')}
@@ -704,12 +848,12 @@ function Domestic() {
                 {/* Address/UPI ID Display */}
                 <div className="bg-white/10 rounded-lg p-4">
                   <p className="text-white/60 text-xs mb-1">
-                    {myQRType === 'upi' ? 'UPI ID' : 'Wallet Address'}
+                    {myQRType === 'upi' ? 'UPI ID' : JSON.parse(localStorage.getItem('userData') || '{}').ensName ? 'ENS Name' : 'Wallet Address'}
                   </p>
                   <p className="text-white text-sm font-mono break-all">
                     {myQRType === 'upi' 
                       ? `${JSON.parse(localStorage.getItem('userData') || '{}').phone}@oksbi`
-                      : walletAddress
+                      : JSON.parse(localStorage.getItem('userData') || '{}').ensName || walletAddress
                     }
                   </p>
                   {myQRType === 'wallet' && (
@@ -729,6 +873,85 @@ function Domestic() {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request Modal */}
+      {showRequestModal && (
+        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="w-[360px] h-[700px] bg-fuchsia-600 rounded-3xl shadow-xl flex flex-col overflow-hidden">
+            <div className="p-4 flex items-center justify-between">
+              <h2 className="text-lg font-medium text-white">
+                Request {amount} {selectedMode === 'upi' ? 'INR' : selectedMode.toUpperCase()}
+              </h2>
+              <button
+                onClick={() => setShowRequestModal(false)}
+                className="p-2 text-white hover:bg-fuchsia-500 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 pb-4">
+              <div className="mb-4">
+                <p className="text-white/80 text-sm mb-4">
+                  Select who to request payment from:
+                </p>
+                
+                {/* Search Bar */}
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={selectedMode === 'upi' ? 'Search by name, phone or UPI ID...' : 'Search by name, ENS or wallet address...'}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/50 focus:border-white/50"
+                  />
+                </div>
+                
+                {getRelevantContacts().length === 0 ? (
+                  <div className="text-center py-16 text-white/60">
+                    <Users className="w-12 h-12 mx-auto mb-4 text-white/40" />
+                    <p className="text-white">
+                      {searchQuery.trim() ? 'No matching contacts found' : 'No contacts found'}
+                    </p>
+                    <p className="text-sm text-white/60 mt-1">
+                      {searchQuery.trim() ? (
+                        'Try a different search term'
+                      ) : (
+                        selectedMode === 'upi' 
+                          ? 'Add phone numbers or UPI IDs from Address Book'
+                          : 'Add ENS names or wallet addresses from Address Book'
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {getRelevantContacts().map((contact, index) => (
+                      <button
+                        key={`${contact.type}-${contact.id || index}`}
+                        onClick={() => handleSendRequest(contact, contact.type)}
+                        className="w-full p-3 text-left bg-white/10 border border-white/20 rounded-xl hover:bg-white/20 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-white">{contact.name}</div>
+                            <div className="text-sm text-white/70">
+                              {getContactIdentifier(contact, contact.type)}
+                            </div>
+                          </div>
+                          <div className="text-xs text-white/50 uppercase">
+                            {contact.type}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

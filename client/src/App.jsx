@@ -8,6 +8,7 @@ import Transfer from './pages/Transfer';
 import Services from './pages/Services';
 import Activity from './pages/Activity';
 import AddressBook from './pages/AddressBook';
+import Request from './pages/Request';
 import PinEntry from './pages/PinEntry';
 import PaymentSuccess from './pages/PaymentSuccess';
 
@@ -25,6 +26,8 @@ function App() {
           <Route path="/transfer" element={<Transfer />} />
           <Route path="/activity" element={<Activity />} />
           <Route path="/address-book" element={<AddressBook />} />
+          <Route path="/bills" element={<Request />} />
+          <Route path="/request" element={<Request />} />
           <Route path="/pin-entry" element={<PinEntry />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
         </Routes>

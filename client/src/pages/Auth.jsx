@@ -46,6 +46,10 @@ function Auth() {
       localStorage.setItem('authToken', response.data.token);
       localStorage.setItem('userData', JSON.stringify(userData));
 
+      // Add user to global list for bill sharing
+      const { addUserToGlobalList } = await import('../utils/userUtils');
+      addUserToGlobalList(userData);
+
       // Navigate based on wallet status
       if (response.data.user.hasWallet) {
         navigate('/');
@@ -122,6 +126,10 @@ function Auth() {
       
       localStorage.setItem('authToken', response.data.token);
       localStorage.setItem('userData', JSON.stringify(userData));
+
+      // Add user to global list for bill sharing
+      const { addUserToGlobalList } = await import('../utils/userUtils');
+      addUserToGlobalList(userData);
 
       console.log('Navigating to wallet setup...');
       // Navigate to wallet setup if no wallet exists, otherwise go to home
