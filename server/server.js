@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 });
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
@@ -365,8 +365,13 @@ app.get('/api/keystore', authenticateToken, async (req, res) => {
 });
 
 // ENS Routes
-const ensRoutes = require('./routes/ens');
-app.use('/api/ens', ensRoutes);
+try {
+  const ensRoutes = require('./routes/ens');
+  app.use('/api/ens', ensRoutes);
+  console.log('ENS routes loaded successfully');
+} catch (error) {
+  console.warn('ENS routes not available:', error.message);
+}
 
 // Health check route
 app.get('/health', (req, res) => {
