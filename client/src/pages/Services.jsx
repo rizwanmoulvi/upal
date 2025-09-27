@@ -361,7 +361,7 @@ function Domestic() {
           <div className="relative dropdown-container">
             <button 
               onClick={() => setShowDropdown(!showDropdown)}
-              className="bg-fuchsia-500 text-white px-4 py-2 rounded-full text-sm shadow flex items-center gap-1"
+              className="bg-fuchsia-600 text-white px-4 py-2 rounded-full text-sm shadow flex items-center gap-1"
             >
               {selectedMode.toUpperCase()}
               <ChevronDown className="w-3 h-3" />
@@ -512,7 +512,7 @@ function Domestic() {
               <button
                 key={idx}
                 onClick={() => handleKeypadClick(num)}
-                className="py-3 flex items-center justify-center hover:bg-fuchsia-500 rounded-full transition-colors active:bg-fuchsia-400"
+                className="py-3 flex items-center justify-center hover:bg-fuchsia-600 rounded-full transition-colors active:bg-fuchsia-400"
               >
                 {num === '<' ? '⌫' : num}
               </button>
@@ -521,7 +521,7 @@ function Domestic() {
 
           {/* Buttons */}
           <div className="flex justify-between mt-6 mb-4 space-x-4">
-            <button className="flex-1 py-3 bg-fuchsia-500 text-white rounded-full font-semibold shadow hover:bg-fuchsia-400 transition-colors">
+            <button className="flex-1 py-3 bg-fuchsia-600 text-white rounded-full font-semibold shadow hover:bg-fuchsia-400 transition-colors">
               Request
             </button>
             
@@ -543,7 +543,7 @@ function Domestic() {
                 onClick={handleTransfer}
                 className={`flex-1 py-3 text-white rounded-full font-semibold shadow transition-colors ${
                   amount && amount !== '0' 
-                    ? 'bg-fuchsia-500 hover:bg-fuchsia-400' 
+                    ? 'bg-fuchsia-600 hover:bg-fuchsia-400' 
                     : 'bg-fuchsia-400/50 cursor-not-allowed'
                 }`}
                 disabled={!amount || amount === '0'}
@@ -582,7 +582,10 @@ function Domestic() {
             <FileText className="h-6 w-6 mb-1" />
             Bills
           </div>
-          <div className="flex flex-col items-center text-white text-xs">
+          <div
+            onClick={() => navigate('/address-book')}
+            className="flex flex-col items-center text-white text-xs hover:text-white/80 transition-colors"
+          >
             <Users className="h-6 w-6 mb-1" />
             People
           </div>

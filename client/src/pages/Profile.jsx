@@ -184,7 +184,7 @@ function Profile() {
           {/* Loading Content */}
           <div className="flex-1 flex items-center justify-center">
             <div className="text-gray-600 text-center">
-              <div className="animate-spin w-8 h-8 border-4 border-fuchsia-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <div className="animate-spin w-8 h-8 border-4 border-fuchsia-600 border-t-transparent rounded-full mx-auto mb-4"></div>
               Loading profile...
             </div>
           </div>
@@ -196,7 +196,7 @@ function Profile() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="w-[360px] h-[700px] bg-fuchsia-500 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="w-[360px] h-[700px] bg-fuchsia-600 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
         {/* <button
           onClick={handleBackToHome}
           className="mr-3 mt-5 mb-5 p-2"
@@ -308,15 +308,7 @@ function Profile() {
             </div>
           </div>
           
-          {/* QR Code */}
-          <div className="flex justify-center mb-4">
-            <div className="bg-white p-4 rounded-lg border">
-              <QRCodeSVG 
-                value={userData.walletAddress || userData.phone || 'No data'} 
-                size={120} 
-              />
-            </div>
-          </div>
+         
           
           {/* Sign Out Button */}
           <div className="flex justify-center">

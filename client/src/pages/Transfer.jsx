@@ -563,7 +563,7 @@ function Transfer() {
         <button
           onClick={handleSend}
           disabled={isLoading || pin.length < 6}
-          className={`p-4 rounded-lg text-fuchsia-500 font-medium transition-colors ${
+          className={`p-4 rounded-lg text-fuchsia-600 font-medium transition-colors ${
             isLoading
               ? 'bg-white/50 cursor-not-allowed'
               : pin.length >= 6

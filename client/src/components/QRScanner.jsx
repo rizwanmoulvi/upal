@@ -308,14 +308,14 @@ const QRScanner = ({ isOpen, onClose, onScan }) => {
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <div className="w-64 h-64 border-2 border-white/50 rounded-lg relative">
                     {/* Corner indicators */}
-                    <div className="absolute top-0 left-0 w-6 h-6 border-l-4 border-t-4 border-fuchsia-500 rounded-tl"></div>
-                    <div className="absolute top-0 right-0 w-6 h-6 border-r-4 border-t-4 border-fuchsia-500 rounded-tr"></div>
-                    <div className="absolute bottom-0 left-0 w-6 h-6 border-l-4 border-b-4 border-fuchsia-500 rounded-bl"></div>
-                    <div className="absolute bottom-0 right-0 w-6 h-6 border-r-4 border-b-4 border-fuchsia-500 rounded-br"></div>
+                    <div className="absolute top-0 left-0 w-6 h-6 border-l-4 border-t-4 border-fuchsia-600 rounded-tl"></div>
+                    <div className="absolute top-0 right-0 w-6 h-6 border-r-4 border-t-4 border-fuchsia-600 rounded-tr"></div>
+                    <div className="absolute bottom-0 left-0 w-6 h-6 border-l-4 border-b-4 border-fuchsia-600 rounded-bl"></div>
+                    <div className="absolute bottom-0 right-0 w-6 h-6 border-r-4 border-b-4 border-fuchsia-600 rounded-br"></div>
                     
                     {/* Scanning line */}
                     {isScanning && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-fuchsia-500 animate-pulse">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-fuchsia-600 animate-pulse">
                         <div className="w-full h-full bg-gradient-to-r from-transparent via-fuchsia-400 to-transparent animate-scan"></div>
                       </div>
                     )}
@@ -325,7 +325,7 @@ const QRScanner = ({ isOpen, onClose, onScan }) => {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-white p-8">
-              <Zap className="h-16 w-16 text-fuchsia-500 mb-4" />
+              <Zap className="h-16 w-16 text-fuchsia-600 mb-4" />
               <h3 className="text-xl font-semibold mb-2">Camera Not Available</h3>
               <p className="text-gray-300 text-center mb-4">
                 Camera access is not available. You can still upload an image of your QR code.
@@ -356,7 +356,7 @@ const QRScanner = ({ isOpen, onClose, onScan }) => {
                 {hasCamera && (
                   <button
                     onClick={handleManualCapture}
-                    className="flex-1 bg-fuchsia-500 hover:bg-fuchsia-600 text-white px-4 py-2 rounded-full font-semibold transition-colors"
+                    className="flex-1 bg-fuchsia-600 hover:bg-fuchsia-600 text-white px-4 py-2 rounded-full font-semibold transition-colors"
                   >
                     Capture Now
                   </button>

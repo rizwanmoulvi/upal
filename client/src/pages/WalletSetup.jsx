@@ -175,7 +175,7 @@ function WalletSetup() {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="w-[360px] h-[700px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-fuchsia-500 text-white p-6 text-center">
+          <div className="bg-fuchsia-600 text-white p-6 text-center">
             <h1 className="text-xl font-bold">Secret Recovery Phrase</h1>
             <p className="text-fuchsia-100 mt-2 text-sm">Keep this safe and secure</p>
           </div>
@@ -195,13 +195,13 @@ function WalletSetup() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowMnemonic(!showMnemonic)}
-                    className="p-2 text-fuchsia-500 hover:bg-fuchsia-50 rounded-lg transition-colors"
+                    className="p-2 text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition-colors"
                   >
                     {showMnemonic ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                   <button
                     onClick={copyMnemonic}
-                    className="p-2 text-fuchsia-500 hover:bg-fuchsia-50 rounded-lg transition-colors"
+                    className="p-2 text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition-colors"
                   >
                     {copied ? <Check size={16} /> : <Copy size={16} />}
                   </button>
@@ -237,7 +237,7 @@ function WalletSetup() {
                 </button>
                 <button
                   onClick={handleNextStep}
-                  className="bg-fuchsia-500 text-white p-3 rounded-lg hover:bg-fuchsia-600 font-medium transition-colors"
+                  className="bg-fuchsia-600 text-white p-3 rounded-lg hover:bg-fuchsia-600 font-medium transition-colors"
                 >
                   I've Written It Down
                 </button>
@@ -266,7 +266,7 @@ function WalletSetup() {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="w-[360px] h-[700px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-fuchsia-500 text-white p-6 text-center">
+          <div className="bg-fuchsia-600 text-white p-6 text-center">
             <h1 className="text-xl font-bold">Confirm Recovery Phrase</h1>
             <p className="text-fuchsia-100 mt-2 text-sm">Verify you wrote it down correctly</p>
           </div>
@@ -293,7 +293,7 @@ function WalletSetup() {
                     type="text"
                     value={userInputs[inputIndex]}
                     onChange={(e) => handleConfirmationInput(inputIndex, e.target.value)}
-                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent text-base"
+                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-600 focus:border-transparent text-base"
                     placeholder={`Enter word #${wordIndex + 1}`}
                   />
                 </div>
@@ -309,7 +309,7 @@ function WalletSetup() {
               </button>
               <button
                 onClick={handleNextStep}
-                className="bg-fuchsia-500 text-white p-4 rounded-lg hover:bg-fuchsia-600 font-medium transition-colors"
+                className="bg-fuchsia-600 text-white p-4 rounded-lg hover:bg-fuchsia-600 font-medium transition-colors"
               >
                 Continue
               </button>
@@ -325,7 +325,7 @@ function WalletSetup() {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="w-[360px] h-[700px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-fuchsia-500 text-white p-6 text-center">
+          <div className="bg-fuchsia-600 text-white p-6 text-center">
             <h1 className="text-xl font-bold">Set Wallet PIN</h1>
             <p className="text-fuchsia-100 mt-2 text-sm">Secure your wallet</p>
           </div>
@@ -360,7 +360,7 @@ function WalletSetup() {
                   type="password"
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
-                  className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent text-base"
+                  className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-600 focus:border-transparent text-base"
                   placeholder="Enter your PIN"
                   maxLength={6}
                 />
@@ -374,7 +374,7 @@ function WalletSetup() {
                   type="password"
                   value={confirmPin}
                   onChange={(e) => setConfirmPin(e.target.value)}
-                  className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent text-base"
+                  className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fuchsia-600 focus:border-transparent text-base"
                   placeholder="Confirm your PIN"
                   maxLength={6}
                 />
@@ -402,7 +402,7 @@ function WalletSetup() {
                 className={`p-4 rounded-lg text-white font-medium transition-colors ${
                   isLoading || pin.length < 6
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-fuchsia-500 hover:bg-fuchsia-600'
+                    : 'bg-fuchsia-600 hover:bg-fuchsia-600'
                 }`}
               >
                 {isLoading ? 'Creating Wallet...' : 'Create Wallet'}

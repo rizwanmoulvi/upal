@@ -81,7 +81,7 @@ function PaymentSuccess() {
             <p className="text-gray-600 mb-4">Unable to display payment details</p>
             <button
               onClick={() => navigate('/services')}
-              className="px-6 py-2 bg-fuchsia-500 text-white rounded-lg hover:bg-fuchsia-600 transition-colors"
+              className="px-6 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-600 transition-colors"
             >
               Go to Services
             </button>

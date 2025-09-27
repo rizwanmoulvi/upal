@@ -32,7 +32,7 @@ function WalletCreation() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-[360px] h-[700px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-fuchsia-500 text-white p-6 text-center">
+        <div className="bg-fuchsia-600 text-white p-6 text-center">
           <h1 className="text-2xl font-bold">Create Your Wallet</h1>
           <p className="text-fuchsia-100 mt-2 text-sm">Set up your crypto wallet</p>
         </div>
@@ -50,7 +50,7 @@ function WalletCreation() {
           
           <button
             onClick={handleCreate}
-            className="w-full bg-fuchsia-500 hover:bg-fuchsia-600 text-white p-4 rounded-lg font-medium text-base transition-colors"
+            className="w-full bg-fuchsia-600 hover:bg-fuchsia-600 text-white p-4 rounded-lg font-medium text-base transition-colors"
           >
             Create Wallet & ENS
           </button>

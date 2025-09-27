@@ -7,6 +7,7 @@ import Profile from './pages/Profile';
 import Transfer from './pages/Transfer';
 import Services from './pages/Services';
 import Activity from './pages/Activity';
+import AddressBook from './pages/AddressBook';
 import PinEntry from './pages/PinEntry';
 import PaymentSuccess from './pages/PaymentSuccess';
 
@@ -23,6 +24,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/transfer" element={<Transfer />} />
           <Route path="/activity" element={<Activity />} />
+          <Route path="/address-book" element={<AddressBook />} />
           <Route path="/pin-entry" element={<PinEntry />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
         </Routes>

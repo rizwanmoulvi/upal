@@ -61,6 +61,20 @@ function PinEntry() {
           paymentData.recipientAddress, 
           paymentData.amount
         );
+        
+        // Wait for transaction to be mined
+        const receipt = await transaction.wait();
+        
+        // Navigate to confirmation/success page with real transaction data
+        navigate('/payment-success', {
+          state: {
+            paymentData: paymentData,
+            transactionId: transaction.hash,
+            transactionReceipt: receipt,
+            blockNumber: receipt.blockNumber,
+            gasUsed: receipt.gasUsed.toString()
+          }
+        });
       } else if (paymentData.mode === 'flow') {
         // Send FLOW tokens on Flow Testnet
         transaction = await sendFlowTokens(
@@ -68,23 +82,36 @@ function PinEntry() {
           paymentData.recipientAddress, 
           paymentData.amount
         );
+        
+        // Wait for transaction to be mined
+        const receipt = await transaction.wait();
+        
+        // Navigate to confirmation/success page with real transaction data
+        navigate('/payment-success', {
+          state: {
+            paymentData: paymentData,
+            transactionId: transaction.hash,
+            transactionReceipt: receipt,
+            blockNumber: receipt.blockNumber,
+            gasUsed: receipt.gasUsed.toString()
+          }
+        });
+      } else if (paymentData.mode === 'upi' || paymentData.mode === 'inr') {
+        // Handle UPI/INR payments - simulate the transaction locally
+        const mockTransactionId = `upi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Navigate to payment success page with simulated transaction data
+        navigate('/payment-success', {
+          state: {
+            paymentData: paymentData,
+            transactionId: mockTransactionId,
+            blockNumber: null,
+            gasUsed: null
+          }
+        });
       } else {
-        throw new Error('UPI payments not supported in this version');
+        throw new Error('Payment mode not supported');
       }
-      
-      // Wait for transaction to be mined
-      const receipt = await transaction.wait();
-      
-      // Navigate to confirmation/success page with real transaction data
-      navigate('/payment-success', {
-        state: {
-          paymentData: paymentData,
-          transactionId: transaction.hash,
-          transactionReceipt: receipt,
-          blockNumber: receipt.blockNumber,
-          gasUsed: receipt.gasUsed.toString()
-        }
-      });
     } catch (error) {
       console.error('Payment failed:', error);
       
@@ -116,7 +143,7 @@ function PinEntry() {
             <p className="text-gray-600 mb-4">Payment information not found</p>
             <button
               onClick={() => navigate('/services')}
-              className="px-6 py-2 bg-fuchsia-500 text-white rounded-lg hover:bg-fuchsia-600 transition-colors"
+              className="px-6 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-600 transition-colors"
             >
               Go Back to Services
             </button>

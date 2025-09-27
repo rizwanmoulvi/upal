@@ -200,7 +200,7 @@ function Auth() {
               value={otp}
               onChange={handleOtpInput}
               placeholder="Enter 6-digit OTP"
-              className="w-full p-4 border rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-fuchsia-500 text-center text-lg tracking-widest"
+              className="w-full p-4 border rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-fuchsia-600 text-center text-lg tracking-widest"
               disabled={isLoading}
               maxLength={6}
               autoFocus
@@ -226,7 +226,7 @@ function Auth() {
               className={`w-full p-4 rounded-lg text-white font-medium ${
                 isLoading || otp.length !== 6
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-fuchsia-500 hover:bg-fuchsia-600'
+                  : 'bg-fuchsia-600 hover:bg-fuchsia-600'
               } transition-colors`}
             >
               {isLoading ? 'Verifying...' : 'Verify OTP & Sign Up'}
@@ -241,20 +241,20 @@ function Auth() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-[360px] h-[700px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-fuchsia-500 text-white p-6 text-center">
+        <div className="bg-fuchsia-600 text-white p-6 text-center">
           <h1 className="text-6xl font-bold">uPAL</h1>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-6 bg-fuchsia-500 flex flex-col justify-center">
+        <div className="flex-1 p-6 bg-fuchsia-600 flex flex-col justify-center">
           {/* Tab Buttons */}
           <div className="flex mb-6 bg-gray-100 p-1 rounded-lg">
             <button
               onClick={() => setIsLogin(true)}
               className={`flex-1 p-3 text-center font-medium rounded-lg transition-colors ${
                 isLogin 
-                  ? 'bg-fuchsia-500 text-white' 
-                  : 'text-fuchsia-500 hover:text-fuchsia-600'
+                  ? 'bg-fuchsia-600 text-white' 
+                  : 'text-fuchsia-600 hover:text-fuchsia-600'
               }`}
               disabled={isLoading}
             >
@@ -264,8 +264,8 @@ function Auth() {
               onClick={() => setIsLogin(false)}
               className={`flex-1 p-3 text-center font-medium rounded-lg transition-colors ${
                 !isLogin 
-                  ? 'bg-fuchsia-500 text-white' 
-                  : 'text-fuchsia-500 hover:text-fuchsia-600'
+                  ? 'bg-fuchsia-600 text-white' 
+                  : 'text-fuchsia-600 hover:text-fuchsia-600'
               }`}
               disabled={isLoading}
             >
@@ -279,8 +279,8 @@ function Auth() {
               <label className="block text-sm font-bold text-white mb-2">
                 Phone Number
               </label>
-              <div className="flex items-center bg-gray-50 border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-fuchsia-500 focus-within:border-transparent">
-                <Phone className="mr-3 text-fuchsia-500" size={20} />
+              <div className="flex items-center bg-gray-50 border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-fuchsia-600 focus-within:border-transparent">
+                <Phone className="mr-3 text-fuchsia-600" size={20} />
                 <input
                   type="tel"
                   value={phone}
@@ -298,8 +298,8 @@ function Auth() {
                 <label className="block text-sm font-bold text-white mb-2">
                   Full Name
                 </label>
-                <div className="flex items-center bg-gray-50 border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-fuchsia-500 focus-within:border-transparent">
-                  <User className="mr-3 text-fuchsia-500" size={20} />
+                <div className="flex items-center bg-gray-50 border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-fuchsia-600 focus-within:border-transparent">
+                  <User className="mr-3 text-fuchsia-600" size={20} />
                   <input
                     type="text"
                     value={name}
@@ -316,8 +316,8 @@ function Auth() {
               <label className="block text-sm font-bold text-white mb-2">
                 Password
               </label>
-              <div className="flex items-center bg-gray-50 border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-fuchsia-500 focus-within:border-transparent">
-                <Lock className="mr-3 text-fuchsia-500" size={20} />
+              <div className="flex items-center bg-gray-50 border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-fuchsia-600 focus-within:border-transparent">
+                <Lock className="mr-3 text-fuchsia-600" size={20} />
                 <input
                   type="password"
                   value={password}
@@ -342,7 +342,7 @@ function Auth() {
             className={`w-full mt-6 p-4 rounded-lg  font-medium text-base ${
               isLoading 
                 ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-white text-fuchsia-500 hover:bg-fuchsia-600 hover:text-white'
+                : 'bg-white text-fuchsia-600 hover:bg-fuchsia-600 hover:text-white'
             } transition-colors`}
           >
             {isLoading 
