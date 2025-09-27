@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
-import { QrCode, FileText, Users, ArrowLeftRight, Compass, CheckCircle, ChevronDown, RefreshCw, Send } from "lucide-react";
+import { QrCode, FileText, Users, ArrowLeftRight, Compass, CheckCircle, ChevronDown, RefreshCw, Send, X } from "lucide-react";
 import { getFlowBalance, getPYUSDBalance, fetchKeystore, decryptWallet } from '../utils/walletService';
 import QRScanner from '../components/QRScanner';
 import { analyzeQRCode, testQRAnalysis } from '../utils/qrUtils';
+import QRCodeGenerator from 'qrcode';
+
+
 
 
 function Domestic() {
@@ -23,6 +26,10 @@ function Domestic() {
   const [scannedData, setScannedData] = useState(null);
   const [recipientAddress, setRecipientAddress] = useState('');
   const [showNetworkSelection, setShowNetworkSelection] = useState(false);
+  const [showMyQRCode, setShowMyQRCode] = useState(false);
+  const [myQRType, setMyQRType] = useState('upi'); // 'upi' or 'wallet'
+  const [myQRCodeData, setMyQRCodeData] = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -241,6 +248,73 @@ function Domestic() {
     navigate('/profile');
   };
 
+  // Handle showing my QR code
+  const handleShowMyQR = async () => {
+    try {
+      // Get user data and wallet address
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      const keystoreData = await fetchKeystore();
+      
+      if (keystoreData?.walletAddress) {
+        setWalletAddress(keystoreData.walletAddress);
+      }
+      
+      // Generate initial QR code (UPI by default)
+      await generateMyQRCode('upi', userData.phone, keystoreData?.walletAddress);
+      setShowMyQRCode(true);
+    } catch (error) {
+      console.error('Failed to show QR code:', error);
+      alert('Failed to load QR code. Please try again.');
+    }
+  };
+
+  // Generate QR code based on type
+  const generateMyQRCode = async (type, phoneNumber, address) => {
+    try {
+      let qrData = '';
+      
+      if (type === 'upi') {
+        // Generate UPI QR code
+        qrData = `${phoneNumber}@oksbi`;
+      } else if (type === 'wallet') {
+        // Generate wallet QR code (MetaMask format for current network)
+        if (selectedMode === 'pyusd') {
+          // Ethereum Sepolia format
+          qrData = `ethereum:${address}@0xaa36a7`;
+        } else if (selectedMode === 'flow') {
+          // Flow testnet format
+          qrData = `flow:${address}@0x221`;
+        } else {
+          // Default to wallet address
+          qrData = address || '';
+        }
+      }
+      
+      // Generate QR code image
+      // Generate QR code image
+      if (qrData) {
+        const qrCodeDataURL = await QRCodeGenerator.toDataURL(qrData, {
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+        setMyQRCodeData(qrCodeDataURL);
+      }
+    } catch (error) {
+      console.error('Failed to generate QR code:', error);
+      setMyQRCodeData('');
+    }
+  };
+
+  // Handle QR type change
+  const handleQRTypeChange = async (type) => {
+    setMyQRType(type);
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    await generateMyQRCode(type, userData.phone, walletAddress);
+  };
+
   const handleKeypadClick = (value) => {
     if (value === '<') {
       // Backspace - remove last character
@@ -311,7 +385,7 @@ function Domestic() {
                 >
                   <div>
                     <div className="font-medium">PYUSD</div>
-                    <div className="text-xs text-gray-500">Ethereum Sepolia</div>
+                    
                   </div>
                 </button>
                 <button
@@ -323,19 +397,30 @@ function Domestic() {
                 >
                   <div>
                     <div className="font-medium">FLOW</div>
-                    <div className="text-xs text-gray-500">Flow Testnet</div>
+                    
                   </div>
                 </button>
               </div>
             )}
           </div>
          
-          <button 
-            onClick={handleProfileClick}
-            className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black font-bold"
-          >
-            🙂
-          </button>
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={handleShowMyQR}
+              className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-fuchsia-600 hover:bg-gray-50 transition-colors"
+              title="Show My QR Code"
+            ><div>
+              <QrCode className="h-5 w-5" />
+              </div>
+            </button>
+            
+            <button 
+              onClick={handleProfileClick}
+              className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black font-bold"
+            >
+              🙂
+            </button>
+          </div>
         </div>
 
         {/* Balance Section */}
@@ -536,6 +621,109 @@ function Domestic() {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* My QR Code Modal */}
+      {showMyQRCode && (
+        <div className="fixed inset-0 bg-gray-100 flex items-center justify-center p-4 z-50">
+          <div className="w-[360px] h-[700px] bg-fuchsia-600 rounded-3xl shadow-xl flex flex-col">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 pb-4">
+              <h1 className="text-white text-lg font-semibold">My QR Code</h1>
+              <button
+                onClick={() => setShowMyQRCode(false)}
+                className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+              >
+                <X className="h-5 w-5 text-white" />
+              </button>
+            </div>
+
+            {/* QR Type Selector */}
+            <div className="px-6 pb-4">
+              <div className="flex bg-white/10 rounded-lg p-1">
+                <button
+                  onClick={() => handleQRTypeChange('upi')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    myQRType === 'upi'
+                      ? 'bg-white text-fuchsia-600'
+                      : 'text-white hover:bg-white/10'
+                  }`}
+                >
+                  UPI
+                </button>
+                <button
+                  onClick={() => handleQRTypeChange('wallet')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    myQRType === 'wallet'
+                      ? 'bg-white text-fuchsia-600'
+                      : 'text-white hover:bg-white/10'
+                  }`}
+                >
+                  Wallet
+                </button>
+              </div>
+            </div>
+
+            {/* QR Code Display */}
+            <div className="flex-1 flex flex-col items-center justify-center px-6">
+              <div className="bg-white rounded-2xl p-8 shadow-lg">
+                {myQRCodeData ? (
+                  <img 
+                    src={myQRCodeData} 
+                    alt="My QR Code" 
+                    className="w-48 h-48"
+                  />
+                ) : (
+                  <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <QrCode className="h-16 w-16 text-gray-400" />
+                  </div>
+                )}
+              </div>
+
+              {/* QR Code Info */}
+              <div className="mt-6 text-center">
+                <h3 className="text-white text-xl font-semibold mb-2">
+                  {myQRType === 'upi' ? 'UPI Payment' : 'Wallet Address'}
+                </h3>
+                <p className="text-white/70 text-sm mb-4">
+                  {myQRType === 'upi' 
+                    ? 'Scan this QR code to send money via UPI'
+                    : `Scan to send ${selectedMode === 'pyusd' ? 'PYUSD' : 'FLOW'} tokens`
+                  }
+                </p>
+                
+                {/* Address/UPI ID Display */}
+                <div className="bg-white/10 rounded-lg p-4">
+                  <p className="text-white/60 text-xs mb-1">
+                    {myQRType === 'upi' ? 'UPI ID' : 'Wallet Address'}
+                  </p>
+                  <p className="text-white text-sm font-mono break-all">
+                    {myQRType === 'upi' 
+                      ? `${JSON.parse(localStorage.getItem('userData') || '{}').phone}@oksbi`
+                      : walletAddress
+                    }
+                  </p>
+                  {myQRType === 'wallet' && (
+                    <p className="text-white/50 text-xs mt-2">
+                      Network: {selectedMode === 'pyusd' ? 'Ethereum Sepolia' : 'Flow Testnet'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Close Button */}
+            <div className="p-6">
+              <button
+                onClick={() => setShowMyQRCode(false)}
+                className="w-full bg-white text-fuchsia-600 py-4 rounded-2xl font-semibold shadow-lg hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
