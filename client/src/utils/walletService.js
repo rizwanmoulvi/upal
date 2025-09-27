@@ -2,7 +2,7 @@ import axios from 'axios';
 import { ethers } from 'ethers';
 import { DEFAULT_NETWORK, CURRENCY_NETWORKS, TOKENS } from '../config/networks.js';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'https://api.upal.rizzmo.site/api';
 
 // Get auth headers for API calls
 const getAuthHeaders = () => {

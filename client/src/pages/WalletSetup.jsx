@@ -21,7 +21,7 @@ function WalletSetup() {
   const [skippedBackup, setSkippedBackup] = useState(false);
   const navigate = useNavigate();
 
-  const API_BASE_URL = 'http://localhost:3001/api';
+  const API_BASE_URL = 'https://api.upal.rizzmo.site/api';
 
   useEffect(() => {
     // Check authentication

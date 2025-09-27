@@ -15,7 +15,7 @@ function Auth() {
   const [generatedOtp, setGeneratedOtp] = useState('');
   const navigate = useNavigate();
 
-  const API_BASE_URL = 'http://localhost:3001/api';
+  const API_BASE_URL = 'https://api.upal.rizzmo.site/api';
 
   const handleLogin = async () => {
     if (!phone || !password) {

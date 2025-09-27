@@ -36,7 +36,7 @@ function Profile() {
         // Fetch updated profile from backend with JWT token
         const token = localStorage.getItem('authToken');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await axios.get(`http://localhost:3001/api/profile/${phone}`, { headers });
+        const res = await axios.get(`https://api.upal.rizzmo.site/api/profile/${phone}`, { headers });
         
         // Combine backend data with local user data (preserving needsBackupReminder)
         const combinedUserData = {
