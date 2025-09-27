@@ -55,6 +55,7 @@ function Profile() {
           name: res.data.name,
           walletAddress: res.data.walletAddress,
           ensDomain: res.data.ensDomain,
+          ensName: res.data.ensName, // Add the new ensName field
           balance: res.data.pyusdBalance,
           hasWallet: !!res.data.walletAddress, // Set hasWallet based on wallet address
           needsBackupReminder: localUserData.needsBackupReminder
@@ -249,7 +250,7 @@ function Profile() {
               </div>
               <div>
                 <span className="font-medium text-gray-700">ENS:</span>
-                <span className="ml-2 text-gray-900">{userData.ensDomain || 'Not assigned'}</span>
+                <span className="ml-2 text-gray-900">{userData.ensName || userData.ensDomain || 'Not assigned'}</span>
               </div>
             </div>
           </div>

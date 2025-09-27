@@ -260,7 +260,7 @@ function Domestic() {
       }
       
       // Generate initial QR code (UPI by default)
-      await generateMyQRCode('upi', userData.phone, keystoreData?.walletAddress);
+      await generateMyQRCode('upi', userData.phone, keystoreData?.walletAddress, userData.ensName);
       setShowMyQRCode(true);
     } catch (error) {
       console.error('Failed to show QR code:', error);
@@ -269,7 +269,7 @@ function Domestic() {
   };
 
   // Generate QR code based on type
-  const generateMyQRCode = async (type, phoneNumber, address) => {
+  const generateMyQRCode = async (type, phoneNumber, address, ensName = null) => {
     try {
       let qrData = '';
       
@@ -277,16 +277,19 @@ function Domestic() {
         // Generate UPI QR code
         qrData = `${phoneNumber}@oksbi`;
       } else if (type === 'wallet') {
+        // Use ENS name if available, otherwise use wallet address
+        const displayAddress = ensName || address || '';
+        
         // Generate wallet QR code (MetaMask format for current network)
         if (selectedMode === 'pyusd') {
-          // Ethereum Sepolia format
-          qrData = `ethereum:${address}@0xaa36a7`;
+          // Ethereum Sepolia format - use ENS name if available
+          qrData = `ethereum:${displayAddress}@0xaa36a7`;
         } else if (selectedMode === 'flow') {
-          // Flow testnet format
+          // Flow testnet format - still use address as ENS is Ethereum-specific
           qrData = `flow:${address}@0x221`;
         } else {
-          // Default to wallet address
-          qrData = address || '';
+          // Default to ENS name or wallet address
+          qrData = displayAddress;
         }
       }
       
@@ -312,7 +315,7 @@ function Domestic() {
   const handleQRTypeChange = async (type) => {
     setMyQRType(type);
     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    await generateMyQRCode(type, userData.phone, walletAddress);
+    await generateMyQRCode(type, userData.phone, walletAddress, userData.ensName);
   };
 
   const handleKeypadClick = (value) => {

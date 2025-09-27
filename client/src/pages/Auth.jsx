@@ -38,6 +38,7 @@ function Auth() {
         name: response.data.user.name,
         walletAddress: response.data.user.walletAddress,
         ensDomain: response.data.user.ensDomain,
+        ensName: response.data.user.ensName, // Add ensName field
         balance: response.data.user.pyusdBalance,
         hasWallet: response.data.user.hasWallet
       };
@@ -114,6 +115,7 @@ function Auth() {
         name: response.data.user.name,
         walletAddress: response.data.user.walletAddress,
         ensDomain: response.data.user.ensDomain,
+        ensName: response.data.user.ensName, // Add ensName field
         balance: response.data.user.pyusdBalance,
         hasWallet: response.data.user.hasWallet
       };
