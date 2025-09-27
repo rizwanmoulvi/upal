@@ -22,6 +22,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add more detailed logging
+app.use((req, res, next) => {
+  console.log('=== Request Details ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  console.log('======================');
+  next();
+});
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB connected'))
@@ -364,4 +375,26 @@ app.get('/health', (req, res) => {
 
 // Start Server
 const PORT = process.env.PORT || 5000;
+
+// Add this before app.listen()
+app.use((req, res) => {
+  console.log('Unmatched route:', req.method, req.originalUrl);
+  res.status(404).json({
+    error: 'Route not found',
+    method: req.method,
+    url: req.originalUrl,
+    availableRoutes: [
+      'POST /api/send-otp',
+      'POST /api/verify-otp', 
+      'POST /api/login',
+      'GET /api/health',
+      'GET /api/profile/:phone',
+      'PUT /api/profile/:phone',
+      'POST /api/activity/:phone',
+      'POST /api/keystore',
+      'GET /api/keystore'
+    ]
+  });
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
