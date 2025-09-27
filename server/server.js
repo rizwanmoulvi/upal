@@ -175,6 +175,15 @@ app.post('/api/verify-otp', async (req, res) => {
   }
 });
 
+// Add this route
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Login
 app.post('/api/login', async (req, res) => {
   const { phone, password } = req.body;
